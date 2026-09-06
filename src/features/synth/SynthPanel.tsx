@@ -1,75 +1,92 @@
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { audioController } from '../../audio/AudioController';
 import {
   DEFAULT_ENVELOPE,
   DEFAULT_FILTER_ENVELOPE,
+  DEFAULT_LFO,
   DEFAULT_OSCILLATORS,
   type EnvelopeSettings,
   type FilterEnvelopeSettings,
+  type LfoSettings,
   type OscillatorId,
   type OscillatorSettings,
   type OscillatorType,
 } from '../../domain/Synth';
+import { FilterCutoffControl } from './FilterCutoffControl';
+import { LfoControls } from './LfoControls';
+import { MixerControls } from './MixerControls';
 import { OscillatorControls } from './OscillatorControls';
+import { Oscilloscope } from './Oscilloscope';
 import { SynthKeyboard } from './SynthKeyboard';
-
-const OSCILLATOR_IDS: OscillatorId[] = ['A', 'B'];
+import './SynthPanel.css';
 
 export const SynthPanel = () => {
-  const [status, setStatus] = useState(
-    'Audio has not started',
-  );
-  const [activeNote, setActiveNote] = useState<string | null>(
-    null,
-  );
-  const [oscillators, setOscillators] =
-    useState(DEFAULT_OSCILLATORS);
+  const [oscillators, setOscillators] = useState<
+    Record<OscillatorId, OscillatorSettings>
+  >(DEFAULT_OSCILLATORS);
+
   const [filterCutoff, setFilterCutoff] = useState(200);
   const [filterResonance, setFilterResonance] = useState(2);
+
   const [filterEnvelope, setFilterEnvelope] =
     useState<FilterEnvelopeSettings>(
       DEFAULT_FILTER_ENVELOPE,
     );
+
   const [envelope, setEnvelope] =
     useState<EnvelopeSettings>(DEFAULT_ENVELOPE);
 
-  const updateOscillatorSettings = (
-    oscillatorId: OscillatorId,
-    updates: Partial<OscillatorSettings>,
-  ) => {
-    setOscillators((currentOscillators) => ({
-      ...currentOscillators,
-      [oscillatorId]: {
-        ...currentOscillators[oscillatorId],
-        ...updates,
-      },
-    }));
-  };
+  const [lfo, setLfo] =
+    useState<LfoSettings>(DEFAULT_LFO);
 
-  const handleNoteStart = (note: string) => {
+  const [activeNote, setActiveNote] = useState<
+    string | null
+  >(null);
+
+  const [status, setStatus] = useState(
+    'Press and hold a key to play a note.',
+  );
+
+  useEffect(() => {
+    return () => {
+      audioController.dispose();
+    };
+  }, []);
+
+  const handleNoteStart = async (note: string) => {
     setActiveNote(note);
+    setStatus(`Playing ${note}`);
 
-    void audioController
-      .startNote(note)
-      .then(() => {
-        setStatus('Audio is ready');
-      })
-      .catch(() => {
-        setActiveNote(null);
-        setStatus('Unable to start audio');
-      });
+    try {
+      await audioController.startNote(note);
+    } catch (error) {
+      console.error('Unable to start audio:', error);
+
+      setActiveNote(null);
+      setStatus(
+        'Unable to start audio. Click a key and try again.',
+      );
+    }
   };
 
   const handleNoteRelease = () => {
-    setActiveNote(null);
     audioController.releaseNote();
+
+    setActiveNote(null);
+    setStatus('Press and hold a key to play a note.');
   };
 
   const handleOscillatorTypeChange = (
     oscillatorId: OscillatorId,
     type: OscillatorType,
   ) => {
-    updateOscillatorSettings(oscillatorId, { type });
+    setOscillators((currentOscillators) => ({
+      ...currentOscillators,
+      [oscillatorId]: {
+        ...currentOscillators[oscillatorId],
+        type,
+      },
+    }));
 
     void audioController.setOscillatorType(
       oscillatorId,
@@ -81,7 +98,13 @@ export const SynthPanel = () => {
     oscillatorId: OscillatorId,
     level: number,
   ) => {
-    updateOscillatorSettings(oscillatorId, { level });
+    setOscillators((currentOscillators) => ({
+      ...currentOscillators,
+      [oscillatorId]: {
+        ...currentOscillators[oscillatorId],
+        level,
+      },
+    }));
 
     void audioController.setOscillatorLevel(
       oscillatorId,
@@ -93,7 +116,13 @@ export const SynthPanel = () => {
     oscillatorId: OscillatorId,
     detune: number,
   ) => {
-    updateOscillatorSettings(oscillatorId, { detune });
+    setOscillators((currentOscillators) => ({
+      ...currentOscillators,
+      [oscillatorId]: {
+        ...currentOscillators[oscillatorId],
+        detune,
+      },
+    }));
 
     void audioController.setOscillatorDetune(
       oscillatorId,
@@ -102,278 +131,377 @@ export const SynthPanel = () => {
   };
 
   const handleFilterCutoffChange = (
-    event: ChangeEvent<HTMLInputElement>,
+    frequency: number,
   ) => {
-    const frequency = Number(event.target.value);
-
     setFilterCutoff(frequency);
+
     void audioController.setFilterCutoff(frequency);
   };
 
   const handleFilterResonanceChange = (
-    event: ChangeEvent<HTMLInputElement>,
+    resonance: number,
   ) => {
-    const resonance = Number(event.target.value);
-
     setFilterResonance(resonance);
+
     void audioController.setFilterResonance(resonance);
   };
 
   const handleFilterEnvelopeChange = (
-    parameter: keyof FilterEnvelopeSettings,
-    event: ChangeEvent<HTMLInputElement>,
+    property: keyof FilterEnvelopeSettings,
+    value: number,
   ) => {
-    const value = Number(event.target.value);
-
-    const nextFilterEnvelope = {
+    const nextEnvelope = {
       ...filterEnvelope,
-      [parameter]: value,
+      [property]: value,
     };
 
-    setFilterEnvelope(nextFilterEnvelope);
+    setFilterEnvelope(nextEnvelope);
 
-    void audioController.setFilterEnvelope(
-      nextFilterEnvelope,
-    );
+    void audioController.setFilterEnvelope(nextEnvelope);
   };
 
   const handleEnvelopeChange = (
-    parameter: keyof EnvelopeSettings,
-    event: ChangeEvent<HTMLInputElement>,
+    property: keyof EnvelopeSettings,
+    value: number,
   ) => {
-    const value = Number(event.target.value);
-
     const nextEnvelope = {
       ...envelope,
-      [parameter]: value,
+      [property]: value,
     };
 
     setEnvelope(nextEnvelope);
+
     void audioController.setEnvelope(nextEnvelope);
   };
 
+  const handleLfoChange = (settings: LfoSettings) => {
+    setLfo(settings);
+
+    void audioController.setLfoSettings(settings);
+  };
+
   return (
-    <section>
-      <h2>Subtractive Synth</h2>
+    <section className="synth-panel">
+      <header className="synth-panel__header">
+        <div className="synth-panel__header-information">
+          <p className="synth-panel__eyebrow">
+            Virtual Analog Instrument
+          </p>
 
-      <p>{status}</p>
+          <h1>Subtractive Synthesizer</h1>
 
-      {OSCILLATOR_IDS.map((oscillatorId) => (
-        <OscillatorControls
-          key={oscillatorId}
-          oscillatorId={oscillatorId}
-          settings={oscillators[oscillatorId]}
-          onTypeChange={handleOscillatorTypeChange}
-          onLevelChange={handleOscillatorLevelChange}
-          onDetuneChange={handleOscillatorDetuneChange}
-        />
-      ))}
-
-      <fieldset>
-        <legend>Filter</legend>
-
-        <div>
-          <label htmlFor="filter-cutoff">
-            Cutoff: {filterCutoff} Hz
-          </label>
-
-          <input
-            id="filter-cutoff"
-            type="range"
-            min="50"
-            max="5000"
-            step="10"
-            value={filterCutoff}
-            onChange={handleFilterCutoffChange}
-          />
+          <p className="synth-panel__status">
+            {status}
+          </p>
         </div>
 
-        <div>
-          <label htmlFor="filter-resonance">
-            Resonance: {filterResonance.toFixed(1)}
-          </label>
-
-          <input
-            id="filter-resonance"
-            type="range"
-            min="0"
-            max="20"
-            step="0.1"
-            value={filterResonance}
-            onChange={handleFilterResonanceChange}
-          />
+        <div className="synth-panel__scope">
+          <Oscilloscope />
         </div>
-      </fieldset>
+      </header>
 
-      <fieldset>
-        <legend>Filter Envelope</legend>
+      <div className="synth-panel__signal-scroll">
+        <div className="synth-panel__signal-chain">
+          <section className="synth-module synth-module--modulation">
+            <h2>Modulation</h2>
 
-        <div>
-          <label htmlFor="filter-envelope-attack">
-            Attack: {filterEnvelope.attack.toFixed(2)} seconds
-          </label>
+            <LfoControls
+              settings={lfo}
+              onChange={handleLfoChange}
+            />
+          </section>
 
-          <input
-            id="filter-envelope-attack"
-            type="range"
-            min="0"
-            max="2"
-            step="0.01"
-            value={filterEnvelope.attack}
-            onChange={(event) =>
-              handleFilterEnvelopeChange('attack', event)
-            }
-          />
+          <section className="synth-module synth-module--vco">
+            <h2>VCO</h2>
+
+            <div className="oscillator-stack">
+              <OscillatorControls
+                oscillatorId="A"
+                settings={oscillators.A}
+                onTypeChange={
+                  handleOscillatorTypeChange
+                }
+                onDetuneChange={
+                  handleOscillatorDetuneChange
+                }
+              />
+
+              <OscillatorControls
+                oscillatorId="B"
+                settings={oscillators.B}
+                onTypeChange={
+                  handleOscillatorTypeChange
+                }
+                onDetuneChange={
+                  handleOscillatorDetuneChange
+                }
+              />
+            </div>
+          </section>
+
+          <section className="synth-module synth-module--mixer">
+            <h2>Mix</h2>
+
+            <MixerControls
+              oscillators={oscillators}
+              onLevelChange={
+                handleOscillatorLevelChange
+              }
+            />
+          </section>
+
+          <section className="synth-module synth-module--vcf">
+            <h2>VCF</h2>
+
+            <fieldset>
+              <legend>Low-pass Filter</legend>
+
+              <FilterCutoffControl
+                frequency={filterCutoff}
+                onChange={handleFilterCutoffChange}
+              />
+
+              <div>
+                <label htmlFor="filter-resonance">
+                  Resonance:{' '}
+                  {filterResonance.toFixed(1)}
+                </label>
+
+                <input
+                  id="filter-resonance"
+                  type="range"
+                  min="0"
+                  max="20"
+                  step="0.1"
+                  value={filterResonance}
+                  onChange={(event) =>
+                    handleFilterResonanceChange(
+                      Number(event.target.value),
+                    )
+                  }
+                />
+              </div>
+            </fieldset>
+          </section>
+
+          <section className="synth-module synth-module--envelopes">
+            <h2>Envelopes</h2>
+
+            <div className="envelope-stack">
+              <fieldset>
+                <legend>Filter ADSR</legend>
+
+                <div className="envelope-controls-grid">
+                  <div>
+                    <label htmlFor="filter-envelope-attack">
+                      Attack:{' '}
+                      {filterEnvelope.attack.toFixed(2)} s
+                    </label>
+
+                    <input
+                      id="filter-envelope-attack"
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.01"
+                      value={filterEnvelope.attack}
+                      onChange={(event) =>
+                        handleFilterEnvelopeChange(
+                          'attack',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="filter-envelope-decay">
+                      Decay:{' '}
+                      {filterEnvelope.decay.toFixed(2)} s
+                    </label>
+
+                    <input
+                      id="filter-envelope-decay"
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.01"
+                      value={filterEnvelope.decay}
+                      onChange={(event) =>
+                        handleFilterEnvelopeChange(
+                          'decay',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="filter-envelope-sustain">
+                      Sustain:{' '}
+                      {filterEnvelope.sustain.toFixed(2)}
+                    </label>
+
+                    <input
+                      id="filter-envelope-sustain"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={filterEnvelope.sustain}
+                      onChange={(event) =>
+                        handleFilterEnvelopeChange(
+                          'sustain',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="filter-envelope-release">
+                      Release:{' '}
+                      {filterEnvelope.release.toFixed(2)} s
+                    </label>
+
+                    <input
+                      id="filter-envelope-release"
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="0.01"
+                      value={filterEnvelope.release}
+                      onChange={(event) =>
+                        handleFilterEnvelopeChange(
+                          'release',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="envelope-control--wide">
+                    <label htmlFor="filter-envelope-octaves">
+                      Amount:{' '}
+                      {filterEnvelope.octaves.toFixed(1)}
+                      {' octaves'}
+                    </label>
+
+                    <input
+                      id="filter-envelope-octaves"
+                      type="range"
+                      min="0"
+                      max="8"
+                      step="0.1"
+                      value={filterEnvelope.octaves}
+                      onChange={(event) =>
+                        handleFilterEnvelopeChange(
+                          'octaves',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Amplifier ADSR</legend>
+
+                <div className="envelope-controls-grid">
+                  <div>
+                    <label htmlFor="amplitude-envelope-attack">
+                      Attack:{' '}
+                      {envelope.attack.toFixed(2)} s
+                    </label>
+
+                    <input
+                      id="amplitude-envelope-attack"
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.01"
+                      value={envelope.attack}
+                      onChange={(event) =>
+                        handleEnvelopeChange(
+                          'attack',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="amplitude-envelope-decay">
+                      Decay:{' '}
+                      {envelope.decay.toFixed(2)} s
+                    </label>
+
+                    <input
+                      id="amplitude-envelope-decay"
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.01"
+                      value={envelope.decay}
+                      onChange={(event) =>
+                        handleEnvelopeChange(
+                          'decay',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="amplitude-envelope-sustain">
+                      Sustain:{' '}
+                      {envelope.sustain.toFixed(2)}
+                    </label>
+
+                    <input
+                      id="amplitude-envelope-sustain"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={envelope.sustain}
+                      onChange={(event) =>
+                        handleEnvelopeChange(
+                          'sustain',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="amplitude-envelope-release">
+                      Release:{' '}
+                      {envelope.release.toFixed(2)} s
+                    </label>
+
+                    <input
+                      id="amplitude-envelope-release"
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="0.01"
+                      value={envelope.release}
+                      onChange={(event) =>
+                        handleEnvelopeChange(
+                          'release',
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          </section>
         </div>
-
-        <div>
-          <label htmlFor="filter-envelope-decay">
-            Decay: {filterEnvelope.decay.toFixed(2)} seconds
-          </label>
-
-          <input
-            id="filter-envelope-decay"
-            type="range"
-            min="0"
-            max="2"
-            step="0.01"
-            value={filterEnvelope.decay}
-            onChange={(event) =>
-              handleFilterEnvelopeChange('decay', event)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="filter-envelope-sustain">
-            Sustain: {Math.round(filterEnvelope.sustain * 100)}%
-          </label>
-
-          <input
-            id="filter-envelope-sustain"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={filterEnvelope.sustain}
-            onChange={(event) =>
-              handleFilterEnvelopeChange('sustain', event)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="filter-envelope-release">
-            Release: {filterEnvelope.release.toFixed(2)} seconds
-          </label>
-
-          <input
-            id="filter-envelope-release"
-            type="range"
-            min="0"
-            max="4"
-            step="0.01"
-            value={filterEnvelope.release}
-            onChange={(event) =>
-              handleFilterEnvelopeChange('release', event)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="filter-envelope-octaves">
-            Amount: {filterEnvelope.octaves.toFixed(1)} octaves
-          </label>
-
-          <input
-            id="filter-envelope-octaves"
-            type="range"
-            min="0"
-            max="8"
-            step="0.1"
-            value={filterEnvelope.octaves}
-            onChange={(event) =>
-              handleFilterEnvelopeChange('octaves', event)
-            }
-          />
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Amplitude Envelope</legend>
-
-        <div>
-          <label htmlFor="envelope-attack">
-            Attack: {envelope.attack.toFixed(2)} seconds
-          </label>
-
-          <input
-            id="envelope-attack"
-            type="range"
-            min="0"
-            max="2"
-            step="0.01"
-            value={envelope.attack}
-            onChange={(event) =>
-              handleEnvelopeChange('attack', event)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="envelope-decay">
-            Decay: {envelope.decay.toFixed(2)} seconds
-          </label>
-
-          <input
-            id="envelope-decay"
-            type="range"
-            min="0"
-            max="2"
-            step="0.01"
-            value={envelope.decay}
-            onChange={(event) =>
-              handleEnvelopeChange('decay', event)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="envelope-sustain">
-            Sustain: {Math.round(envelope.sustain * 100)}%
-          </label>
-
-          <input
-            id="envelope-sustain"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={envelope.sustain}
-            onChange={(event) =>
-              handleEnvelopeChange('sustain', event)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="envelope-release">
-            Release: {envelope.release.toFixed(2)} seconds
-          </label>
-
-          <input
-            id="envelope-release"
-            type="range"
-            min="0"
-            max="4"
-            step="0.01"
-            value={envelope.release}
-            onChange={(event) =>
-              handleEnvelopeChange('release', event)
-            }
-          />
-        </div>
-      </fieldset>
+      </div>
 
       <SynthKeyboard
         activeNote={activeNote}

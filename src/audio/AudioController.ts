@@ -2,6 +2,7 @@ import * as Tone from 'tone';
 import type {
   EnvelopeSettings,
   FilterEnvelopeSettings,
+  LfoSettings,
   OscillatorId,
   OscillatorType,
 } from '../domain/Synth';
@@ -95,6 +96,18 @@ class AudioController {
     await this.initialize();
 
     this.synth?.setEnvelope(envelope);
+  }
+
+  async setLfoSettings(
+    settings: LfoSettings,
+  ): Promise<void> {
+    await this.initialize();
+
+    this.synth?.setLfoSettings(settings);
+  }
+
+  getWaveformData(): Float32Array | null {
+    return this.synth?.getWaveformData() ?? null;
   }
 
   dispose(): void {

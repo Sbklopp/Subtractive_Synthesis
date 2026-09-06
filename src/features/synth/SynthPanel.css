@@ -1,0 +1,270 @@
+.synth-panel {
+  width: 100%;
+  padding: 1.5rem;
+  color: #15222a;
+  background:
+    linear-gradient(
+      145deg,
+      #8097a2 0%,
+      #637e8b 100%
+    );
+  border: 1px solid #94a9b3;
+  border-radius: 18px;
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.synth-panel__header {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1fr)
+    minmax(300px, 480px);
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.synth-panel__header-information {
+  min-width: 0;
+  color: #f4f7f8;
+}
+
+.synth-panel__header h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  line-height: 1;
+}
+
+.synth-panel__eyebrow {
+  margin: 0 0 0.4rem;
+  color: #d7e1e5;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.synth-panel__status {
+  display: inline-block;
+  margin: 0.9rem 0 0;
+  padding: 0.55rem 0.8rem;
+  color: #dce7eb;
+  font-size: 0.85rem;
+  background: rgb(29 52 63 / 55%);
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+}
+
+.synth-panel__scope {
+  min-width: 0;
+}
+
+.synth-panel__scope .oscilloscope {
+  margin: 0;
+  padding: 0.65rem;
+  color: #e6f0ed;
+  background: #20343d;
+  border: 1px solid #365763;
+  border-radius: 10px;
+}
+
+.synth-panel__scope .oscilloscope h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.synth-panel__scope .oscilloscope__canvas {
+  width: 100%;
+  height: 110px;
+}
+
+.synth-panel__signal-scroll {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+}
+
+.synth-panel__signal-chain {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 0.95fr)
+    minmax(285px, 1.2fr)
+    minmax(190px, 0.75fr)
+    minmax(235px, 1fr)
+    minmax(340px, 1.4fr);
+  gap: 0.8rem;
+  min-width: 1320px;
+}
+
+.synth-module {
+  --module-accent: #425f6d;
+
+  min-width: 0;
+  min-height: 510px;
+  padding: 0.9rem;
+  background:
+    linear-gradient(
+      160deg,
+      #edf1f3 0%,
+      #d4dde1 100%
+    );
+  border: 2px solid var(--module-accent);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 75%),
+    0 5px 12px rgb(29 49 58 / 18%);
+}
+
+.synth-module--modulation {
+  --module-accent: #4e6d7b;
+}
+
+.synth-module--vco,
+.synth-module--mixer {
+  --module-accent: #df5138;
+}
+
+.synth-module--vcf,
+.synth-module--envelopes {
+  --module-accent: #ff873f;
+}
+
+.synth-module > h2 {
+  margin: 0 0 0.85rem;
+  color: #192127;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.synth-module fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid rgb(55 78 89 / 28%);
+  border-radius: 10px;
+}
+
+.synth-module legend {
+  padding: 0 0.35rem;
+  color: #324a55;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.synth-module fieldset > div,
+.envelope-controls-grid > div {
+  margin-bottom: 0.85rem;
+}
+
+.synth-module fieldset > div:last-child,
+.envelope-controls-grid > div:last-child {
+  margin-bottom: 0;
+}
+
+.synth-module label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #253942;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.synth-module input[type='range'] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--module-accent);
+  cursor: pointer;
+}
+
+.synth-module input[type='checkbox'] {
+  margin-right: 0.45rem;
+  accent-color: var(--module-accent);
+}
+
+.synth-module select {
+  width: 100%;
+  padding: 0.5rem;
+  color: #1c2d35;
+  background: #f8fafb;
+  border: 1px solid #91a3ac;
+  border-radius: 6px;
+}
+
+.synth-module small {
+  display: block;
+  margin-top: 0.75rem;
+  color: #60727a;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.oscillator-stack,
+.envelope-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.oscillator-stack {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.envelope-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.envelope-controls-grid > div {
+  min-width: 0;
+  margin: 0;
+}
+
+.envelope-control--wide {
+  grid-column: 1 / -1;
+}
+
+.mixer-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .synth-panel {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+
+  .synth-panel__header {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .synth-panel__scope {
+    width: 100%;
+  }
+
+  .synth-panel__scope .oscilloscope__canvas {
+    height: 90px;
+  }
+
+  .synth-panel__signal-chain {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+
+  .synth-module {
+    min-height: auto;
+  }
+
+  .oscillator-stack {
+    grid-template-columns: 1fr;
+  }
+}

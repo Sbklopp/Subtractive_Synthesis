@@ -11,10 +11,6 @@ interface OscillatorControlsProps {
     oscillatorId: OscillatorId,
     type: OscillatorType,
   ) => void;
-  onLevelChange: (
-    oscillatorId: OscillatorId,
-    level: number,
-  ) => void;
   onDetuneChange: (
     oscillatorId: OscillatorId,
     detune: number,
@@ -25,17 +21,18 @@ export const OscillatorControls = ({
   oscillatorId,
   settings,
   onTypeChange,
-  onLevelChange,
   onDetuneChange,
 }: OscillatorControlsProps) => {
   const idPrefix = `oscillator-${oscillatorId.toLowerCase()}`;
 
   return (
-    <fieldset>
+    <fieldset className="oscillator-controls">
       <legend>Oscillator {oscillatorId}</legend>
 
       <div>
-        <label htmlFor={`${idPrefix}-type`}>Waveform</label>
+        <label htmlFor={`${idPrefix}-type`}>
+          Waveform
+        </label>
 
         <select
           id={`${idPrefix}-type`}
@@ -55,27 +52,6 @@ export const OscillatorControls = ({
       </div>
 
       <div>
-        <label htmlFor={`${idPrefix}-level`}>
-          Level: {Math.round(settings.level * 100)}%
-        </label>
-
-        <input
-          id={`${idPrefix}-level`}
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={settings.level}
-          onChange={(event) =>
-            onLevelChange(
-              oscillatorId,
-              Number(event.target.value),
-            )
-          }
-        />
-      </div>
-
-      <div>
         <label htmlFor={`${idPrefix}-detune`}>
           Detune: {settings.detune} cents
         </label>
@@ -83,8 +59,8 @@ export const OscillatorControls = ({
         <input
           id={`${idPrefix}-detune`}
           type="range"
-          min="-50"
-          max="50"
+          min="-100"
+          max="100"
           step="1"
           value={settings.detune}
           onChange={(event) =>

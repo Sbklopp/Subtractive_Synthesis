@@ -2,46 +2,36 @@ import * as Tone from 'tone';
 import {
   DEFAULT_ENVELOPE,
   DEFAULT_FILTER_ENVELOPE,
+  DEFAULT_LFO,
   DEFAULT_OSCILLATORS,
   type EnvelopeSettings,
   type FilterEnvelopeSettings,
+  type LfoSettings,
   type OscillatorId,
   type OscillatorType,
 } from '../../domain/Synth';
+import { OscillatorVoice } from './OscillatorVoice';
 
 export class SubtractiveSynth {
-  private oscillatorA: Tone.Oscillator;
-  private oscillatorB: Tone.Oscillator;
-  private oscillatorAGain: Tone.Gain;
-  private oscillatorBGain: Tone.Gain;
+  private oscillatorA: OscillatorVoice;
+  private oscillatorB: OscillatorVoice;
   private filter: Tone.Filter;
   private filterEnvelope: Tone.FrequencyEnvelope;
   private amplitudeEnvelope: Tone.AmplitudeEnvelope;
+  private lfo: Tone.LFO;
+  private pitchLfoGain: Tone.Gain;
+  private filterLfoGain: Tone.Gain;
+  private pulseWidthLfoGain: Tone.Gain;
   private masterOutput: Tone.Volume;
+  private waveform: Tone.Waveform;
 
   constructor() {
-    this.oscillatorA = new Tone.Oscillator({
-      frequency: 'C2',
-      type: DEFAULT_OSCILLATORS.A.type,
-    });
-
-    this.oscillatorB = new Tone.Oscillator({
-      frequency: 'C2',
-      type: DEFAULT_OSCILLATORS.B.type,
-    });
-
-    this.oscillatorA.detune.value =
-      DEFAULT_OSCILLATORS.A.detune;
-
-    this.oscillatorB.detune.value =
-      DEFAULT_OSCILLATORS.B.detune;
-
-    this.oscillatorAGain = new Tone.Gain(
-      DEFAULT_OSCILLATORS.A.level,
+    this.oscillatorA = new OscillatorVoice(
+      DEFAULT_OSCILLATORS.A,
     );
 
-    this.oscillatorBGain = new Tone.Gain(
-      DEFAULT_OSCILLATORS.B.level,
+    this.oscillatorB = new OscillatorVoice(
+      DEFAULT_OSCILLATORS.B,
     );
 
     this.filter = new Tone.Filter({
@@ -60,45 +50,70 @@ export class SubtractiveSynth {
       ...DEFAULT_ENVELOPE,
     });
 
+    this.lfo = new Tone.LFO({
+      frequency: DEFAULT_LFO.rate,
+      min: -1,
+      max: 1,
+      type: DEFAULT_LFO.type,
+    });
+
+    this.pitchLfoGain = new Tone.Gain(0);
+    this.filterLfoGain = new Tone.Gain(0);
+    this.pulseWidthLfoGain = new Tone.Gain(0);
+
     this.masterOutput = new Tone.Volume(-8).toDestination();
+    this.waveform = new Tone.Waveform(1024);
 
-    this.oscillatorA.connect(this.oscillatorAGain);
-    this.oscillatorB.connect(this.oscillatorBGain);
-
-    this.oscillatorAGain.connect(this.filter);
-    this.oscillatorBGain.connect(this.filter);
+    this.oscillatorA.connect(this.filter);
+    this.oscillatorB.connect(this.filter);
 
     this.filter.connect(this.amplitudeEnvelope);
     this.amplitudeEnvelope.connect(this.masterOutput);
 
     this.filterEnvelope.connect(this.filter.frequency);
 
-    this.oscillatorA.start();
-    this.oscillatorB.start();
+    this.lfo.connect(this.pitchLfoGain);
+    this.lfo.connect(this.filterLfoGain);
+    this.lfo.connect(this.pulseWidthLfoGain);
+
+    this.oscillatorA.connectPitchModulation(
+      this.pitchLfoGain,
+    );
+
+    this.oscillatorB.connectPitchModulation(
+      this.pitchLfoGain,
+    );
+
+    this.filterLfoGain.connect(this.filter.frequency);
+
+    this.oscillatorA.connectPulseWidthModulation(
+      this.pulseWidthLfoGain,
+    );
+
+    this.oscillatorB.connectPulseWidthModulation(
+      this.pulseWidthLfoGain,
+    );
+
+    this.masterOutput.connect(this.waveform);
+
+    this.lfo.start();
+    this.setLfoSettings(DEFAULT_LFO);
   }
 
   private getOscillator(
     oscillatorId: OscillatorId,
-  ): Tone.Oscillator {
+  ): OscillatorVoice {
     return oscillatorId === 'A'
       ? this.oscillatorA
       : this.oscillatorB;
-  }
-
-  private getOscillatorGain(
-    oscillatorId: OscillatorId,
-  ): Tone.Gain {
-    return oscillatorId === 'A'
-      ? this.oscillatorAGain
-      : this.oscillatorBGain;
   }
 
   startNote(note: string): void {
     const frequency = Tone.Frequency(note).toFrequency();
     const now = Tone.now();
 
-    this.oscillatorA.frequency.setValueAtTime(frequency, now);
-    this.oscillatorB.frequency.setValueAtTime(frequency, now);
+    this.oscillatorA.setFrequency(frequency, now);
+    this.oscillatorB.setFrequency(frequency, now);
 
     this.filterEnvelope.triggerAttack(now);
     this.amplitudeEnvelope.triggerAttack(now);
@@ -115,28 +130,21 @@ export class SubtractiveSynth {
     oscillatorId: OscillatorId,
     type: OscillatorType,
   ): void {
-    const oscillator = this.getOscillator(oscillatorId);
-
-    oscillator.type = type;
+    this.getOscillator(oscillatorId).setType(type);
   }
 
   setOscillatorLevel(
     oscillatorId: OscillatorId,
     level: number,
   ): void {
-    const oscillatorGain =
-      this.getOscillatorGain(oscillatorId);
-
-    oscillatorGain.gain.rampTo(level, 0.05);
+    this.getOscillator(oscillatorId).setLevel(level);
   }
 
   setOscillatorDetune(
     oscillatorId: OscillatorId,
     detune: number,
   ): void {
-    const oscillator = this.getOscillator(oscillatorId);
-
-    oscillator.detune.rampTo(detune, 0.05);
+    this.getOscillator(oscillatorId).setDetune(detune);
   }
 
   setFilterCutoff(frequency: number): void {
@@ -169,17 +177,45 @@ export class SubtractiveSynth {
     });
   }
 
+  setLfoSettings(settings: LfoSettings): void {
+    this.lfo.type = settings.type;
+    this.lfo.frequency.rampTo(settings.rate, 0.05);
+
+    this.pitchLfoGain.gain.rampTo(
+      settings.pitch.enabled ? settings.pitch.depth : 0,
+      0.05,
+    );
+
+    this.filterLfoGain.gain.rampTo(
+      settings.filter.enabled ? settings.filter.depth : 0,
+      0.05,
+    );
+
+    this.pulseWidthLfoGain.gain.rampTo(
+      settings.pulseWidth.enabled
+        ? settings.pulseWidth.depth
+        : 0,
+      0.05,
+    );
+  }
+
+  getWaveformData(): Float32Array {
+    return this.waveform.getValue();
+  }
+
   dispose(): void {
-    this.oscillatorA.stop();
-    this.oscillatorB.stop();
+    this.lfo.stop();
 
     this.oscillatorA.dispose();
     this.oscillatorB.dispose();
-    this.oscillatorAGain.dispose();
-    this.oscillatorBGain.dispose();
     this.filter.dispose();
     this.filterEnvelope.dispose();
     this.amplitudeEnvelope.dispose();
+    this.lfo.dispose();
+    this.pitchLfoGain.dispose();
+    this.filterLfoGain.dispose();
+    this.pulseWidthLfoGain.dispose();
+    this.waveform.dispose();
     this.masterOutput.dispose();
   }
 }

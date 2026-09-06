@@ -24,6 +24,19 @@ export interface FilterEnvelopeSettings
   octaves: number;
 }
 
+export interface LfoDestinationSettings {
+  enabled: boolean;
+  depth: number;
+}
+
+export interface LfoSettings {
+  type: OscillatorType;
+  rate: number;
+  pitch: LfoDestinationSettings;
+  filter: LfoDestinationSettings;
+  pulseWidth: LfoDestinationSettings;
+}
+
 export const DEFAULT_OSCILLATORS: Record<
   OscillatorId,
   OscillatorSettings
@@ -53,4 +66,24 @@ export const DEFAULT_FILTER_ENVELOPE: FilterEnvelopeSettings = {
   sustain: 0.2,
   release: 0.8,
   octaves: 4,
+};
+
+export const DEFAULT_LFO: LfoSettings = {
+  type: 'sine',
+  rate: 5,
+
+  pitch: {
+    enabled: false,
+    depth: 20,
+  },
+
+  filter: {
+    enabled: false,
+    depth: 800,
+  },
+
+  pulseWidth: {
+    enabled: false,
+    depth: 0.2,
+  },
 };
