@@ -1,7 +1,11 @@
 import * as Tone from 'tone';
 import {
   DEFAULT_ENVELOPE,
+  DEFAULT_FILTER_ENVELOPE,
+  DEFAULT_OSCILLATORS,
   type EnvelopeSettings,
+  type FilterEnvelopeSettings,
+  type OscillatorId,
   type OscillatorType,
 } from '../../domain/Synth';
 
@@ -18,18 +22,27 @@ export class SubtractiveSynth {
   constructor() {
     this.oscillatorA = new Tone.Oscillator({
       frequency: 'C2',
-      type: 'sawtooth',
+      type: DEFAULT_OSCILLATORS.A.type,
     });
 
     this.oscillatorB = new Tone.Oscillator({
       frequency: 'C2',
-      type: 'square',
+      type: DEFAULT_OSCILLATORS.B.type,
     });
 
-    this.oscillatorB.detune.value = 7;
+    this.oscillatorA.detune.value =
+      DEFAULT_OSCILLATORS.A.detune;
 
-    this.oscillatorAGain = new Tone.Gain(0.65);
-    this.oscillatorBGain = new Tone.Gain(0.25);
+    this.oscillatorB.detune.value =
+      DEFAULT_OSCILLATORS.B.detune;
+
+    this.oscillatorAGain = new Tone.Gain(
+      DEFAULT_OSCILLATORS.A.level,
+    );
+
+    this.oscillatorBGain = new Tone.Gain(
+      DEFAULT_OSCILLATORS.B.level,
+    );
 
     this.filter = new Tone.Filter({
       type: 'lowpass',
@@ -39,12 +52,8 @@ export class SubtractiveSynth {
     });
 
     this.filterEnvelope = new Tone.FrequencyEnvelope({
-      attack: 0.01,
-      decay: 0.3,
-      sustain: 0.2,
-      release: 0.8,
+      ...DEFAULT_FILTER_ENVELOPE,
       baseFrequency: 200,
-      octaves: 4,
     });
 
     this.amplitudeEnvelope = new Tone.AmplitudeEnvelope({
@@ -68,6 +77,22 @@ export class SubtractiveSynth {
     this.oscillatorB.start();
   }
 
+  private getOscillator(
+    oscillatorId: OscillatorId,
+  ): Tone.Oscillator {
+    return oscillatorId === 'A'
+      ? this.oscillatorA
+      : this.oscillatorB;
+  }
+
+  private getOscillatorGain(
+    oscillatorId: OscillatorId,
+  ): Tone.Gain {
+    return oscillatorId === 'A'
+      ? this.oscillatorAGain
+      : this.oscillatorBGain;
+  }
+
   startNote(note: string): void {
     const frequency = Tone.Frequency(note).toFrequency();
     const now = Tone.now();
@@ -86,8 +111,32 @@ export class SubtractiveSynth {
     this.amplitudeEnvelope.triggerRelease(now);
   }
 
-  setOscillatorType(type: OscillatorType): void {
-    this.oscillatorA.type = type;
+  setOscillatorType(
+    oscillatorId: OscillatorId,
+    type: OscillatorType,
+  ): void {
+    const oscillator = this.getOscillator(oscillatorId);
+
+    oscillator.type = type;
+  }
+
+  setOscillatorLevel(
+    oscillatorId: OscillatorId,
+    level: number,
+  ): void {
+    const oscillatorGain =
+      this.getOscillatorGain(oscillatorId);
+
+    oscillatorGain.gain.rampTo(level, 0.05);
+  }
+
+  setOscillatorDetune(
+    oscillatorId: OscillatorId,
+    detune: number,
+  ): void {
+    const oscillator = this.getOscillator(oscillatorId);
+
+    oscillator.detune.rampTo(detune, 0.05);
   }
 
   setFilterCutoff(frequency: number): void {
@@ -96,6 +145,19 @@ export class SubtractiveSynth {
 
   setFilterResonance(resonance: number): void {
     this.filter.Q.rampTo(resonance, 0.05);
+  }
+
+  setFilterEnvelope(
+    envelope: FilterEnvelopeSettings,
+  ): void {
+    this.filterEnvelope.set({
+      attack: envelope.attack,
+      decay: envelope.decay,
+      sustain: envelope.sustain,
+      release: envelope.release,
+    });
+
+    this.filterEnvelope.octaves = envelope.octaves;
   }
 
   setEnvelope(envelope: EnvelopeSettings): void {

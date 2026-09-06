@@ -1,6 +1,8 @@
 import * as Tone from 'tone';
 import type {
   EnvelopeSettings,
+  FilterEnvelopeSettings,
+  OscillatorId,
   OscillatorType,
 } from '../domain/Synth';
 import { SubtractiveSynth } from './synth/SubtractiveSynth';
@@ -36,25 +38,60 @@ class AudioController {
     this.synth?.releaseNote();
   }
 
-  async setOscillatorType(type: OscillatorType): Promise<void> {
+  async setOscillatorType(
+    oscillatorId: OscillatorId,
+    type: OscillatorType,
+  ): Promise<void> {
     await this.initialize();
 
-    this.synth?.setOscillatorType(type);
+    this.synth?.setOscillatorType(oscillatorId, type);
   }
 
-  async setFilterCutoff(frequency: number): Promise<void> {
+  async setOscillatorLevel(
+    oscillatorId: OscillatorId,
+    level: number,
+  ): Promise<void> {
+    await this.initialize();
+
+    this.synth?.setOscillatorLevel(oscillatorId, level);
+  }
+
+  async setOscillatorDetune(
+    oscillatorId: OscillatorId,
+    detune: number,
+  ): Promise<void> {
+    await this.initialize();
+
+    this.synth?.setOscillatorDetune(oscillatorId, detune);
+  }
+
+  async setFilterCutoff(
+    frequency: number,
+  ): Promise<void> {
     await this.initialize();
 
     this.synth?.setFilterCutoff(frequency);
   }
 
-  async setFilterResonance(resonance: number): Promise<void> {
+  async setFilterResonance(
+    resonance: number,
+  ): Promise<void> {
     await this.initialize();
 
     this.synth?.setFilterResonance(resonance);
   }
 
-  async setEnvelope(envelope: EnvelopeSettings): Promise<void> {
+  async setFilterEnvelope(
+    envelope: FilterEnvelopeSettings,
+  ): Promise<void> {
+    await this.initialize();
+
+    this.synth?.setFilterEnvelope(envelope);
+  }
+
+  async setEnvelope(
+    envelope: EnvelopeSettings,
+  ): Promise<void> {
     await this.initialize();
 
     this.synth?.setEnvelope(envelope);
