@@ -1,74 +1,159 @@
 # Subtractive Synthesis
 
-A browser-based virtual analog synthesizer built with React, TypeScript, Tone.js, and the Web Audio API.
+A browser-based subtractive synthesizer built with React, TypeScript, Tone.js, and the Web Audio API.
 
-The project is focused on learning and recreating the architecture of a subtractive synthesizer. It currently provides two oscillators, modulation routing, a mixer, a resonant low-pass filter, envelopes, an oscilloscope, and an interactive keyboard.
+The application models a traditional subtractive synthesis signal path:
+
+**LFO → Oscillators → Mixer → Low-Pass Filter → Amplifier**
+
+## Technology
+
+- React
+- TypeScript
+- Vite
+- Tone.js
+- Web Audio API
+
+## Getting Started
+
+### Requirements
+
+Install a current version of Node.js and npm.
+
+You can verify your installations with:
+
+```bash
+node --version
+npm --version
+```
+
+### Install Dependencies
+
+Clone the repository and enter the project directory:
+
+```bash
+git clone <repository-url>
+cd Subtractive_Synthesis
+```
+
+Install the project dependencies:
+
+```bash
+npm install
+```
+
+### Run the Development Server
+
+```bash
+npm run dev
+```
+
+Open the local URL displayed in the terminal.
+
+Audio must be started through a user interaction, so click or press one of the keyboard keys before expecting audio output.
+
+### Create a Production Build
+
+```bash
+npm run build
+```
+
+### Preview the Production Build
+
+```bash
+npm run preview
+```
 
 ## Current Features
 
-### Voltage-Controlled Oscillators
+### Modulation
 
-The synthesizer currently has two oscillators:
+The synthesizer includes one configurable low-frequency oscillator.
 
-- Oscillator A
-- Oscillator B
+The LFO provides:
+
+- Sine, triangle, square, and sawtooth waveforms
+- Adjustable modulation rate
+- Pitch modulation
+- Filter cutoff modulation
+- Square-wave duty-cycle modulation
+- Independent enable and depth controls for each destination
+
+Duty-cycle modulation only affects oscillators using the square waveform.
+
+### Oscillators
+
+The synthesizer includes two oscillators: Oscillator A and Oscillator B.
+
+Each oscillator provides:
+
 - Sine waveform
 - Triangle waveform
 - Square waveform
 - Sawtooth waveform
 - Independent detuning
-- Independent output levels
+- Independent mixer level
 
-Square waveforms use a pulse oscillator internally, allowing their duty cycle to be modulated.
+Square waveforms use pulse oscillators internally so their duty cycle can be modulated by the LFO.
 
 ### Mixer
 
-The mixer currently provides independent level controls for:
+The mixer provides independent volume controls for:
 
 - Oscillator A
 - Oscillator B
 
-Future mixer channels may includeinclude noise
+### Low-Pass Filter
 
-Future<table  code>.gitignore Issue: lines `logs/` plus weird `logs` maybe fine. But typo `logs/` no issue. Pattern `*.local` Vite. `npm-debug`. 
-Typos in README at end generated: "Future mixer channels ... Future mixer channels..." I need correct before final. Continue.
+The voltage-controlled filter provides:
 
-Mixer future:
-- noise generator
-- sub oscillator
-- master level
-Maybe levels already existed in oscillator engine but UI moved.
+- 24 dB-per-octave low-pass filtering
+- Cutoff range from 12 Hz to 12 kHz
+- Exponential cutoff control for more precision at lower frequencies
+- 500 Hz cutoff at the slider midpoint
+- Adjustable resonance
 
-### VCF
-- lowpass 24dB? Tone rolloff -24 yes.
-- cutoff 12Hz-12k piecewise exponential, 500 midpoint.
-- resonance
-- filter ADSR and octave amount.
-### VCA
-- amp ADSR
-### LFO
-- types, rate, pitch, filter, duty
-- independent enable/depth
-### Scope
+### Filter Envelope
+
+The filter has a dedicated ADSR envelope with controls for:
+
+- Attack
+- Decay
+- Sustain
+- Release
+- Filter modulation amount in octaves
+
+### Amplitude Envelope
+
+The amplifier has a dedicated ADSR envelope with controls for:
+
+- Attack
+- Decay
+- Sustain
+- Release
+
+Notes remain active while a key is held and enter the release stage when the key is released.
+
 ### Keyboard
-- C2-C3 keys A W... mapping maybe state. Need exact mapping from summary. Mention.
-Architecture table:
-```
-src/audio/AudioController.ts
-...
-```
-`OscillatorVoice`, `SubtractiveSynth`, `domain/Synth`, features files.
-Signal flow.
-Run.
-Browser Audio.
-Scripts.
-Roadmap.
-Git commands.
-Need mention package-lock now removal from latest branch not history.
 
-Let's redo final in coherent. Ensure not too huge but full README.
+The synthesizer can be played with the on-screen keyboard or a computer keyboard.
 
-Also minor .gitignore pattern `logs/` enough. `*.log`.
-Use `# Package lock` line. Great.
+| Computer key | Note |
+|---|---|
+| A | C2 |
+| W | C♯2 |
+| S | D2 |
+| E | D♯2 |
+| D | E2 |
+| F | F2 |
+| T | F♯2 |
+| G | G2 |
+| Y | G♯2 |
+| H | A2 |
+| U | A♯2 |
+| J | B2 |
+| K | C3 |
 
-Let's craft final entirely. 
+### Oscilloscope
+
+A real-time oscilloscope displays the final waveform produced by the synthesizer.
