@@ -18,7 +18,7 @@ The application models a traditional subtractive synthesis signal path:
 
 ### Requirements
 
-Install a current version of Node.js and npm.
+Install node 24
 
 You can verify your installations with:
 
@@ -29,12 +29,7 @@ npm --version
 
 ### Install Dependencies
 
-Clone the repository and enter the project directory:
-
-```bash
-git clone <repository-url>
-cd Subtractive_Synthesis
-```
+Clone the repository and enter the project directory
 
 Install the project dependencies:
 
