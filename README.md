@@ -1,32 +1,74 @@
-# React + TypeScript + Vite
+# Subtractive Synthesis
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A browser-based virtual analog synthesizer built with React, TypeScript, Tone.js, and the Web Audio API.
 
-Currently, two official plugins are available:
+The project is focused on learning and recreating the architecture of a subtractive synthesizer. It currently provides two oscillators, modulation routing, a mixer, a resonant low-pass filter, envelopes, an oscilloscope, and an interactive keyboard.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Current Features
 
-## React Compiler
+### Voltage-Controlled Oscillators
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The synthesizer currently has two oscillators:
 
-## Expanding the Oxlint configuration
+- Oscillator A
+- Oscillator B
+- Sine waveform
+- Triangle waveform
+- Square waveform
+- Sawtooth waveform
+- Independent detuning
+- Independent output levels
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Square waveforms use a pulse oscillator internally, allowing their duty cycle to be modulated.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### Mixer
+
+The mixer currently provides independent level controls for:
+
+- Oscillator A
+- Oscillator B
+
+Future mixer channels may includeinclude noise
+
+Future<table  code>.gitignore Issue: lines `logs/` plus weird `logs` maybe fine. But typo `logs/` no issue. Pattern `*.local` Vite. `npm-debug`. 
+Typos in README at end generated: "Future mixer channels ... Future mixer channels..." I need correct before final. Continue.
+
+Mixer future:
+- noise generator
+- sub oscillator
+- master level
+Maybe levels already existed in oscillator engine but UI moved.
+
+### VCF
+- lowpass 24dB? Tone rolloff -24 yes.
+- cutoff 12Hz-12k piecewise exponential, 500 midpoint.
+- resonance
+- filter ADSR and octave amount.
+### VCA
+- amp ADSR
+### LFO
+- types, rate, pitch, filter, duty
+- independent enable/depth
+### Scope
+### Keyboard
+- C2-C3 keys A W... mapping maybe state. Need exact mapping from summary. Mention.
+Architecture table:
 ```
+src/audio/AudioController.ts
+...
+```
+`OscillatorVoice`, `SubtractiveSynth`, `domain/Synth`, features files.
+Signal flow.
+Run.
+Browser Audio.
+Scripts.
+Roadmap.
+Git commands.
+Need mention package-lock now removal from latest branch not history.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Let's redo final in coherent. Ensure not too huge but full README.
+
+Also minor .gitignore pattern `logs/` enough. `*.log`.
+Use `# Package lock` line. Great.
+
+Let's craft final entirely. 
