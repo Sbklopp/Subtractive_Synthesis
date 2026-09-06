@@ -1,0 +1,66 @@
+.keyboard-container {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+
+.synth-keyboard {
+  display: flex;
+  width: max-content;
+  min-width: 448px;
+  height: 190px;
+}
+
+.piano-key {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  border: 1px solid #222;
+  border-radius: 0 0 6px 6px;
+  padding: 0 4px 12px;
+  user-select: none;
+  touch-action: none;
+}
+
+.piano-key span {
+  font-size: 0.75rem;
+}
+
+.piano-key small {
+  margin-top: 4px;
+  opacity: 0.65;
+}
+
+.piano-key--white {
+  z-index: 1;
+  width: 56px;
+  height: 190px;
+  background: #f7f7f7;
+  color: #111;
+}
+
+.piano-key--black {
+  z-index: 2;
+  width: 36px;
+  height: 120px;
+  margin-left: -18px;
+  margin-right: -18px;
+  background: #171717;
+  color: #fff;
+}
+
+.piano-key--white.piano-key--active {
+  background: #8bd3ff;
+}
+
+.piano-key--black.piano-key--active {
+  background: #087bbf;
+}
+
+.piano-key:focus-visible {
+  z-index: 3;
+  outline: 3px solid #ffb703;
+  outline-offset: 2px;
+}
