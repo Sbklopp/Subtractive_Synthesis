@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 import type {
+  OscillatorOctave,
   OscillatorSettings,
   OscillatorType,
 } from '../../domain/Synth';
@@ -11,14 +12,24 @@ export class OscillatorVoice {
   private pulseWaveformGain: Tone.Gain;
   private outputGain: Tone.Gain;
   private baseDetune: number;
+  private baseFrequency: number;
+  private octave: OscillatorOctave;
 
   constructor(settings: OscillatorSettings) {
-    const usesPulseOscillator = settings.type === 'square';
+    const usesPulseOscillator =
+      settings.type === 'square';
 
     this.baseDetune = settings.detune;
+    this.octave = settings.octave;
+    this.baseFrequency =
+      Tone.Frequency('C2').toFrequency();
+
+    const initialFrequency =
+      this.getOctaveAdjustedFrequency();
 
     this.basicOscillator = new Tone.Oscillator({
-      frequency: 'C2',
+      frequency: initialFrequency,
+
       type:
         settings.type === 'square'
           ? 'sine'
@@ -26,7 +37,7 @@ export class OscillatorVoice {
     });
 
     this.pulseOscillator = new Tone.PulseOscillator({
-      frequency: 'C2',
+      frequency: initialFrequency,
       width: 0,
     });
 
@@ -40,29 +51,49 @@ export class OscillatorVoice {
 
     this.outputGain = new Tone.Gain(settings.level);
 
-    this.basicOscillator.connect(this.basicWaveformGain);
-    this.pulseOscillator.connect(this.pulseWaveformGain);
+    this.basicOscillator.connect(
+      this.basicWaveformGain,
+    );
+
+    this.pulseOscillator.connect(
+      this.pulseWaveformGain,
+    );
 
     this.basicWaveformGain.connect(this.outputGain);
     this.pulseWaveformGain.connect(this.outputGain);
 
-    this.basicOscillator.detune.value = settings.detune;
-    this.pulseOscillator.detune.value = settings.detune;
+    this.basicOscillator.detune.value =
+      settings.detune;
+
+    this.pulseOscillator.detune.value =
+      settings.detune;
 
     this.basicOscillator.start();
     this.pulseOscillator.start();
+  }
+
+  private getOctaveAdjustedFrequency(): number {
+    return (
+      this.baseFrequency *
+      Math.pow(2, this.octave)
+    );
   }
 
   connect(destination: Tone.Filter): void {
     this.outputGain.connect(destination);
   }
 
-  connectPitchModulation(modulation: Tone.Gain): void {
+  connectPitchModulation(
+    modulation: Tone.Gain,
+  ): void {
     modulation.connect(this.basicOscillator.detune);
     modulation.connect(this.pulseOscillator.detune);
 
-    this.basicOscillator.detune.value = this.baseDetune;
-    this.pulseOscillator.detune.value = this.baseDetune;
+    this.basicOscillator.detune.value =
+      this.baseDetune;
+
+    this.pulseOscillator.detune.value =
+      this.baseDetune;
   }
 
   connectPulseWidthModulation(
@@ -71,14 +102,22 @@ export class OscillatorVoice {
     modulation.connect(this.pulseOscillator.width);
   }
 
-  setFrequency(frequency: number, time: number): void {
+  setFrequency(
+    baseFrequency: number,
+    time: number,
+  ): void {
+    this.baseFrequency = baseFrequency;
+
+    const adjustedFrequency =
+      this.getOctaveAdjustedFrequency();
+
     this.basicOscillator.frequency.setValueAtTime(
-      frequency,
+      adjustedFrequency,
       time,
     );
 
     this.pulseOscillator.frequency.setValueAtTime(
-      frequency,
+      adjustedFrequency,
       time,
     );
   }
@@ -108,8 +147,32 @@ export class OscillatorVoice {
   setDetune(detune: number): void {
     this.baseDetune = detune;
 
-    this.basicOscillator.detune.rampTo(detune, 0.05);
-    this.pulseOscillator.detune.rampTo(detune, 0.05);
+    this.basicOscillator.detune.rampTo(
+      detune,
+      0.05,
+    );
+
+    this.pulseOscillator.detune.rampTo(
+      detune,
+      0.05,
+    );
+  }
+
+  setOctave(octave: OscillatorOctave): void {
+    this.octave = octave;
+
+    const adjustedFrequency =
+      this.getOctaveAdjustedFrequency();
+
+    this.basicOscillator.frequency.rampTo(
+      adjustedFrequency,
+      0.05,
+    );
+
+    this.pulseOscillator.frequency.rampTo(
+      adjustedFrequency,
+      0.05,
+    );
   }
 
   dispose(): void {

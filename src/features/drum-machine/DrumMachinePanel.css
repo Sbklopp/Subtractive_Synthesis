@@ -1,0 +1,269 @@
+.drum-machine-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.drum-machine-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.drum-machine-header h2,
+.drum-machine-header p {
+  margin: 0;
+}
+
+.section-eyebrow {
+  color: #ff8b45;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.drum-machine-header h2 {
+  margin-top: 0.2rem;
+}
+
+.drum-machine-description {
+  margin-top: 0.35rem !important;
+  color: #aeb9bf;
+}
+
+.drum-keyboard-help {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.drum-keyboard-help span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #48555c;
+  border-radius: 0.4rem;
+  background: #20292e;
+  color: #cbd4d8;
+  font-size: 0.75rem;
+}
+
+.drum-keyboard-help kbd,
+.drum-pad-key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  border: 1px solid #77848a;
+  border-radius: 0.25rem;
+  background: #d5dde1;
+  color: #20272b;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 2px 0 #77848a;
+}
+
+.drum-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.implemented-voices {
+  display: grid;
+  grid-template-columns: repeat(
+    3,
+    minmax(0, 1fr)
+  );
+  gap: 1rem;
+}
+
+.drum-voice-editor {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #536168;
+  border-radius: 0.75rem;
+  background: #253037;
+}
+
+.drum-voice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.drum-voice-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.drum-voice-header > span {
+  color: #ff8b45;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.bass-drum-controls,
+.drum-voice-controls {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.bass-drum-controls legend,
+.drum-voice-controls legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.bass-drum-controls label,
+.drum-voice-controls label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #d7dee1;
+  font-size: 0.78rem;
+}
+
+.bass-drum-controls output,
+.drum-voice-controls output {
+  color: #91a1a9;
+  font-variant-numeric: tabular-nums;
+}
+
+.bass-drum-controls input[type='range'],
+.drum-voice-controls input[type='range'] {
+  width: 100%;
+  margin: 0 0 0.45rem;
+  accent-color: #ff7340;
+}
+
+.drum-pad {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: 100%;
+  min-height: 5.25rem;
+  padding: 0.8rem;
+  border: 1px solid #e05d35;
+  border-radius: 0.65rem;
+  background:
+    linear-gradient(
+      145deg,
+      #ef754b,
+      #b83e28
+    );
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+  box-shadow:
+    0 5px 0 #7d2c20,
+    0 8px 16px rgb(0 0 0 / 22%);
+  transition:
+    transform 70ms ease,
+    box-shadow 70ms ease,
+    filter 70ms ease;
+  touch-action: manipulation;
+}
+
+.drum-pad:hover {
+  filter: brightness(1.06);
+}
+
+.drum-pad:focus-visible {
+  outline: 3px solid #8fd8ff;
+  outline-offset: 3px;
+}
+
+.drum-pad.is-active {
+  transform: translateY(4px);
+  filter: brightness(1.15);
+  box-shadow:
+    0 1px 0 #7d2c20,
+    0 3px 8px rgb(0 0 0 / 20%);
+}
+
+.drum-pad-name {
+  justify-self: center;
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.drum-pad-key {
+  box-shadow: 0 2px 0 #70412f;
+}
+
+.upcoming-drums {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed #526168;
+  border-radius: 0.75rem;
+  background: #20292e;
+}
+
+.upcoming-drums h3,
+.upcoming-drums p {
+  margin: 0;
+}
+
+.upcoming-drum-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.upcoming-drum {
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.4rem;
+  background: #313d43;
+  color: #aab6bc;
+  font-size: 0.78rem;
+}
+
+.drum-status {
+  min-height: 1.25rem;
+  margin: 0;
+  color: #91a1a9;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 1000px) {
+  .implemented-voices {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .drum-machine-header,
+  .upcoming-drums {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .drum-keyboard-help,
+  .upcoming-drum-grid {
+    justify-content: flex-start;
+  }
+}

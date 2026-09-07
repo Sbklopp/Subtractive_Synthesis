@@ -1,0 +1,63 @@
+.preset-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.preset-controls__select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 170px;
+}
+
+.preset-controls label {
+  color: #d7e1e5;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.preset-controls select {
+  min-height: 38px;
+  padding: 0.45rem 2rem 0.45rem 0.65rem;
+  color: #1d3039;
+  background: #f4f7f8;
+  border: 1px solid #a8bac2;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.preset-controls__reset {
+  min-height: 38px;
+  padding: 0.45rem 0.85rem;
+  color: #eff5f7;
+  font-weight: 700;
+  background: #304d5a;
+  border: 1px solid #66808b;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.preset-controls__reset:hover {
+  background: #3c5e6d;
+}
+
+.preset-controls select:focus-visible,
+.preset-controls__reset:focus-visible {
+  outline: 3px solid rgb(255 135 63 / 55%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 500px) {
+  .preset-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .preset-controls__select {
+    width: 100%;
+  }
+}

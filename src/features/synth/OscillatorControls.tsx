@@ -1,5 +1,6 @@
 import type {
   OscillatorId,
+  OscillatorOctave,
   OscillatorSettings,
   OscillatorType,
 } from '../../domain/Synth';
@@ -7,23 +8,42 @@ import type {
 interface OscillatorControlsProps {
   oscillatorId: OscillatorId;
   settings: OscillatorSettings;
+
   onTypeChange: (
     oscillatorId: OscillatorId,
     type: OscillatorType,
   ) => void;
+
   onDetuneChange: (
     oscillatorId: OscillatorId,
     detune: number,
   ) => void;
+
+  onOctaveChange: (
+    oscillatorId: OscillatorId,
+    octave: OscillatorOctave,
+  ) => void;
 }
+
+const formatOctave = (
+  octave: OscillatorOctave,
+): string => {
+  if (octave > 0) {
+    return `+${octave}`;
+  }
+
+  return String(octave);
+};
 
 export const OscillatorControls = ({
   oscillatorId,
   settings,
   onTypeChange,
   onDetuneChange,
+  onOctaveChange,
 }: OscillatorControlsProps) => {
-  const idPrefix = `oscillator-${oscillatorId.toLowerCase()}`;
+  const idPrefix =
+    `oscillator-${oscillatorId.toLowerCase()}`;
 
   return (
     <fieldset className="oscillator-controls">
@@ -49,6 +69,32 @@ export const OscillatorControls = ({
           <option value="square">Square</option>
           <option value="sawtooth">Sawtooth</option>
         </select>
+      </div>
+
+      <div>
+        <label htmlFor={`${idPrefix}-octave`}>
+          Octave: {formatOctave(settings.octave)}
+        </label>
+
+        <input
+          id={`${idPrefix}-octave`}
+          type="range"
+          min="-2"
+          max="2"
+          step="1"
+          value={settings.octave}
+          aria-valuetext={formatOctave(
+            settings.octave,
+          )}
+          onChange={(event) =>
+            onOctaveChange(
+              oscillatorId,
+              Number(
+                event.target.value,
+              ) as OscillatorOctave,
+            )
+          }
+        />
       </div>
 
       <div>

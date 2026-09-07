@@ -1,43 +1,63 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { audioController } from '../../audio/AudioController';
 import {
-  DEFAULT_ENVELOPE,
-  DEFAULT_FILTER_ENVELOPE,
-  DEFAULT_LFO,
-  DEFAULT_OSCILLATORS,
+  DEFAULT_SYNTH_PATCH,
   type EnvelopeSettings,
   type FilterEnvelopeSettings,
   type LfoSettings,
   type OscillatorId,
-  type OscillatorSettings,
+  type OscillatorOctave,
   type OscillatorType,
 } from '../../domain/Synth';
+import type { SynthPreset } from '../../domain/SynthPresets';
+import { useSynthStore } from '../../store/useSynthStore';
 import { FilterCutoffControl } from './FilterCutoffControl';
 import { LfoControls } from './LfoControls';
 import { MixerControls } from './MixerControls';
 import { OscillatorControls } from './OscillatorControls';
 import { Oscilloscope } from './Oscilloscope';
+import { PresetControls } from './PresetControls';
 import { SynthKeyboard } from './SynthKeyboard';
 import './SynthPanel.css';
 
 export const SynthPanel = () => {
-  const [oscillators, setOscillators] = useState<
-    Record<OscillatorId, OscillatorSettings>
-  >(DEFAULT_OSCILLATORS);
+  const patch = useSynthStore((state) => state.patch);
 
-  const [filterCutoff, setFilterCutoff] = useState(200);
-  const [filterResonance, setFilterResonance] = useState(2);
+  const selectedPresetId = useSynthStore(
+    (state) => state.selectedPresetId,
+  );
 
-  const [filterEnvelope, setFilterEnvelope] =
-    useState<FilterEnvelopeSettings>(
-      DEFAULT_FILTER_ENVELOPE,
-    );
+  const updateOscillator = useSynthStore(
+    (state) => state.updateOscillator,
+  );
 
-  const [envelope, setEnvelope] =
-    useState<EnvelopeSettings>(DEFAULT_ENVELOPE);
+  const setFilterCutoff = useSynthStore(
+    (state) => state.setFilterCutoff,
+  );
 
-  const [lfo, setLfo] =
-    useState<LfoSettings>(DEFAULT_LFO);
+  const setFilterResonance = useSynthStore(
+    (state) => state.setFilterResonance,
+  );
+
+  const setFilterEnvelope = useSynthStore(
+    (state) => state.setFilterEnvelope,
+  );
+
+  const setAmplitudeEnvelope = useSynthStore(
+    (state) => state.setAmplitudeEnvelope,
+  );
+
+  const setLfo = useSynthStore(
+    (state) => state.setLfo,
+  );
+
+  const applyPreset = useSynthStore(
+    (state) => state.applyPreset,
+  );
+
+  const resetPatch = useSynthStore(
+    (state) => state.resetPatch,
+  );
 
   const [activeNote, setActiveNote] = useState<
     string | null
@@ -47,11 +67,12 @@ export const SynthPanel = () => {
     'Press and hold a key to play a note.',
   );
 
-  useEffect(() => {
-    return () => {
-      audioController.dispose();
-    };
-  }, []);
+  const {
+    oscillators,
+    filter,
+    amplitudeEnvelope,
+    lfo,
+  } = patch;
 
   const handleNoteStart = async (note: string) => {
     setActiveNote(note);
@@ -63,6 +84,7 @@ export const SynthPanel = () => {
       console.error('Unable to start audio:', error);
 
       setActiveNote(null);
+
       setStatus(
         'Unable to start audio. Click a key and try again.',
       );
@@ -80,13 +102,9 @@ export const SynthPanel = () => {
     oscillatorId: OscillatorId,
     type: OscillatorType,
   ) => {
-    setOscillators((currentOscillators) => ({
-      ...currentOscillators,
-      [oscillatorId]: {
-        ...currentOscillators[oscillatorId],
-        type,
-      },
-    }));
+    updateOscillator(oscillatorId, {
+      type,
+    });
 
     void audioController.setOscillatorType(
       oscillatorId,
@@ -98,13 +116,9 @@ export const SynthPanel = () => {
     oscillatorId: OscillatorId,
     level: number,
   ) => {
-    setOscillators((currentOscillators) => ({
-      ...currentOscillators,
-      [oscillatorId]: {
-        ...currentOscillators[oscillatorId],
-        level,
-      },
-    }));
+    updateOscillator(oscillatorId, {
+      level,
+    });
 
     void audioController.setOscillatorLevel(
       oscillatorId,
@@ -116,17 +130,27 @@ export const SynthPanel = () => {
     oscillatorId: OscillatorId,
     detune: number,
   ) => {
-    setOscillators((currentOscillators) => ({
-      ...currentOscillators,
-      [oscillatorId]: {
-        ...currentOscillators[oscillatorId],
-        detune,
-      },
-    }));
+    updateOscillator(oscillatorId, {
+      detune,
+    });
 
     void audioController.setOscillatorDetune(
       oscillatorId,
       detune,
+    );
+  };
+
+  const handleOscillatorOctaveChange = (
+    oscillatorId: OscillatorId,
+    octave: OscillatorOctave,
+  ) => {
+    updateOscillator(oscillatorId, {
+      octave,
+    });
+
+    void audioController.setOscillatorOctave(
+      oscillatorId,
+      octave,
     );
   };
 
@@ -151,7 +175,7 @@ export const SynthPanel = () => {
     value: number,
   ) => {
     const nextEnvelope = {
-      ...filterEnvelope,
+      ...filter.envelope,
       [property]: value,
     };
 
@@ -165,11 +189,11 @@ export const SynthPanel = () => {
     value: number,
   ) => {
     const nextEnvelope = {
-      ...envelope,
+      ...amplitudeEnvelope,
       [property]: value,
     };
 
-    setEnvelope(nextEnvelope);
+    setAmplitudeEnvelope(nextEnvelope);
 
     void audioController.setEnvelope(nextEnvelope);
   };
@@ -178,6 +202,22 @@ export const SynthPanel = () => {
     setLfo(settings);
 
     void audioController.setLfoSettings(settings);
+  };
+
+  const handlePresetSelect = (
+    preset: SynthPreset,
+  ) => {
+    applyPreset(preset);
+
+    void audioController.applyPatch(preset.patch);
+  };
+
+  const handleReset = () => {
+    resetPatch();
+
+    void audioController.applyPatch(
+      DEFAULT_SYNTH_PATCH,
+    );
   };
 
   return (
@@ -189,6 +229,12 @@ export const SynthPanel = () => {
           </p>
 
           <h1>Subtractive Synthesizer</h1>
+
+          <PresetControls
+            selectedPresetId={selectedPresetId}
+            onPresetSelect={handlePresetSelect}
+            onReset={handleReset}
+          />
 
           <p className="synth-panel__status">
             {status}
@@ -224,6 +270,9 @@ export const SynthPanel = () => {
                 onDetuneChange={
                   handleOscillatorDetuneChange
                 }
+                onOctaveChange={
+                  handleOscillatorOctaveChange
+                }
               />
 
               <OscillatorControls
@@ -234,6 +283,9 @@ export const SynthPanel = () => {
                 }
                 onDetuneChange={
                   handleOscillatorDetuneChange
+                }
+                onOctaveChange={
+                  handleOscillatorOctaveChange
                 }
               />
             </div>
@@ -257,14 +309,14 @@ export const SynthPanel = () => {
               <legend>Low-pass Filter</legend>
 
               <FilterCutoffControl
-                frequency={filterCutoff}
+                frequency={filter.cutoff}
                 onChange={handleFilterCutoffChange}
               />
 
               <div>
                 <label htmlFor="filter-resonance">
                   Resonance:{' '}
-                  {filterResonance.toFixed(1)}
+                  {filter.resonance.toFixed(1)}
                 </label>
 
                 <input
@@ -273,7 +325,7 @@ export const SynthPanel = () => {
                   min="0"
                   max="20"
                   step="0.1"
-                  value={filterResonance}
+                  value={filter.resonance}
                   onChange={(event) =>
                     handleFilterResonanceChange(
                       Number(event.target.value),
@@ -295,7 +347,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="filter-envelope-attack">
                       Attack:{' '}
-                      {filterEnvelope.attack.toFixed(2)} s
+                      {filter.envelope.attack.toFixed(2)} s
                     </label>
 
                     <input
@@ -304,7 +356,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="2"
                       step="0.01"
-                      value={filterEnvelope.attack}
+                      value={filter.envelope.attack}
                       onChange={(event) =>
                         handleFilterEnvelopeChange(
                           'attack',
@@ -317,7 +369,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="filter-envelope-decay">
                       Decay:{' '}
-                      {filterEnvelope.decay.toFixed(2)} s
+                      {filter.envelope.decay.toFixed(2)} s
                     </label>
 
                     <input
@@ -326,7 +378,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="2"
                       step="0.01"
-                      value={filterEnvelope.decay}
+                      value={filter.envelope.decay}
                       onChange={(event) =>
                         handleFilterEnvelopeChange(
                           'decay',
@@ -339,7 +391,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="filter-envelope-sustain">
                       Sustain:{' '}
-                      {filterEnvelope.sustain.toFixed(2)}
+                      {filter.envelope.sustain.toFixed(2)}
                     </label>
 
                     <input
@@ -348,7 +400,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="1"
                       step="0.01"
-                      value={filterEnvelope.sustain}
+                      value={filter.envelope.sustain}
                       onChange={(event) =>
                         handleFilterEnvelopeChange(
                           'sustain',
@@ -361,7 +413,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="filter-envelope-release">
                       Release:{' '}
-                      {filterEnvelope.release.toFixed(2)} s
+                      {filter.envelope.release.toFixed(2)} s
                     </label>
 
                     <input
@@ -370,7 +422,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="5"
                       step="0.01"
-                      value={filterEnvelope.release}
+                      value={filter.envelope.release}
                       onChange={(event) =>
                         handleFilterEnvelopeChange(
                           'release',
@@ -383,7 +435,7 @@ export const SynthPanel = () => {
                   <div className="envelope-control--wide">
                     <label htmlFor="filter-envelope-octaves">
                       Amount:{' '}
-                      {filterEnvelope.octaves.toFixed(1)}
+                      {filter.envelope.octaves.toFixed(1)}
                       {' octaves'}
                     </label>
 
@@ -393,7 +445,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="8"
                       step="0.1"
-                      value={filterEnvelope.octaves}
+                      value={filter.envelope.octaves}
                       onChange={(event) =>
                         handleFilterEnvelopeChange(
                           'octaves',
@@ -412,7 +464,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="amplitude-envelope-attack">
                       Attack:{' '}
-                      {envelope.attack.toFixed(2)} s
+                      {amplitudeEnvelope.attack.toFixed(2)} s
                     </label>
 
                     <input
@@ -421,7 +473,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="2"
                       step="0.01"
-                      value={envelope.attack}
+                      value={amplitudeEnvelope.attack}
                       onChange={(event) =>
                         handleEnvelopeChange(
                           'attack',
@@ -434,7 +486,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="amplitude-envelope-decay">
                       Decay:{' '}
-                      {envelope.decay.toFixed(2)} s
+                      {amplitudeEnvelope.decay.toFixed(2)} s
                     </label>
 
                     <input
@@ -443,7 +495,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="2"
                       step="0.01"
-                      value={envelope.decay}
+                      value={amplitudeEnvelope.decay}
                       onChange={(event) =>
                         handleEnvelopeChange(
                           'decay',
@@ -456,7 +508,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="amplitude-envelope-sustain">
                       Sustain:{' '}
-                      {envelope.sustain.toFixed(2)}
+                      {amplitudeEnvelope.sustain.toFixed(2)}
                     </label>
 
                     <input
@@ -465,7 +517,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="1"
                       step="0.01"
-                      value={envelope.sustain}
+                      value={amplitudeEnvelope.sustain}
                       onChange={(event) =>
                         handleEnvelopeChange(
                           'sustain',
@@ -478,7 +530,7 @@ export const SynthPanel = () => {
                   <div>
                     <label htmlFor="amplitude-envelope-release">
                       Release:{' '}
-                      {envelope.release.toFixed(2)} s
+                      {amplitudeEnvelope.release.toFixed(2)} s
                     </label>
 
                     <input
@@ -487,7 +539,7 @@ export const SynthPanel = () => {
                       min="0"
                       max="5"
                       step="0.01"
-                      value={envelope.release}
+                      value={amplitudeEnvelope.release}
                       onChange={(event) =>
                         handleEnvelopeChange(
                           'release',

@@ -8,6 +8,7 @@ import {
   type FilterEnvelopeSettings,
   type LfoSettings,
   type OscillatorId,
+  type OscillatorOctave,
   type OscillatorType,
 } from '../../domain/Synth';
 import { OscillatorVoice } from './OscillatorVoice';
@@ -22,10 +23,8 @@ export class SubtractiveSynth {
   private pitchLfoGain: Tone.Gain;
   private filterLfoGain: Tone.Gain;
   private pulseWidthLfoGain: Tone.Gain;
-  private masterOutput: Tone.Volume;
-  private waveform: Tone.Waveform;
 
-  constructor() {
+  constructor(output: Tone.Gain) {
     this.oscillatorA = new OscillatorVoice(
       DEFAULT_OSCILLATORS.A,
     );
@@ -46,9 +45,10 @@ export class SubtractiveSynth {
       baseFrequency: 200,
     });
 
-    this.amplitudeEnvelope = new Tone.AmplitudeEnvelope({
-      ...DEFAULT_ENVELOPE,
-    });
+    this.amplitudeEnvelope =
+      new Tone.AmplitudeEnvelope({
+        ...DEFAULT_ENVELOPE,
+      });
 
     this.lfo = new Tone.LFO({
       frequency: DEFAULT_LFO.rate,
@@ -61,16 +61,15 @@ export class SubtractiveSynth {
     this.filterLfoGain = new Tone.Gain(0);
     this.pulseWidthLfoGain = new Tone.Gain(0);
 
-    this.masterOutput = new Tone.Volume(-8).toDestination();
-    this.waveform = new Tone.Waveform(1024);
-
     this.oscillatorA.connect(this.filter);
     this.oscillatorB.connect(this.filter);
 
     this.filter.connect(this.amplitudeEnvelope);
-    this.amplitudeEnvelope.connect(this.masterOutput);
+    this.amplitudeEnvelope.connect(output);
 
-    this.filterEnvelope.connect(this.filter.frequency);
+    this.filterEnvelope.connect(
+      this.filter.frequency,
+    );
 
     this.lfo.connect(this.pitchLfoGain);
     this.lfo.connect(this.filterLfoGain);
@@ -84,7 +83,9 @@ export class SubtractiveSynth {
       this.pitchLfoGain,
     );
 
-    this.filterLfoGain.connect(this.filter.frequency);
+    this.filterLfoGain.connect(
+      this.filter.frequency,
+    );
 
     this.oscillatorA.connectPulseWidthModulation(
       this.pulseWidthLfoGain,
@@ -93,8 +94,6 @@ export class SubtractiveSynth {
     this.oscillatorB.connectPulseWidthModulation(
       this.pulseWidthLfoGain,
     );
-
-    this.masterOutput.connect(this.waveform);
 
     this.lfo.start();
     this.setLfoSettings(DEFAULT_LFO);
@@ -144,7 +143,18 @@ export class SubtractiveSynth {
     oscillatorId: OscillatorId,
     detune: number,
   ): void {
-    this.getOscillator(oscillatorId).setDetune(detune);
+    this.getOscillator(oscillatorId).setDetune(
+      detune,
+    );
+  }
+
+  setOscillatorOctave(
+    oscillatorId: OscillatorId,
+    octave: OscillatorOctave,
+  ): void {
+    this.getOscillator(oscillatorId).setOctave(
+      octave,
+    );
   }
 
   setFilterCutoff(frequency: number): void {
@@ -179,15 +189,23 @@ export class SubtractiveSynth {
 
   setLfoSettings(settings: LfoSettings): void {
     this.lfo.type = settings.type;
-    this.lfo.frequency.rampTo(settings.rate, 0.05);
+
+    this.lfo.frequency.rampTo(
+      settings.rate,
+      0.05,
+    );
 
     this.pitchLfoGain.gain.rampTo(
-      settings.pitch.enabled ? settings.pitch.depth : 0,
+      settings.pitch.enabled
+        ? settings.pitch.depth
+        : 0,
       0.05,
     );
 
     this.filterLfoGain.gain.rampTo(
-      settings.filter.enabled ? settings.filter.depth : 0,
+      settings.filter.enabled
+        ? settings.filter.depth
+        : 0,
       0.05,
     );
 
@@ -197,10 +215,6 @@ export class SubtractiveSynth {
         : 0,
       0.05,
     );
-  }
-
-  getWaveformData(): Float32Array {
-    return this.waveform.getValue();
   }
 
   dispose(): void {
@@ -215,7 +229,5 @@ export class SubtractiveSynth {
     this.pitchLfoGain.dispose();
     this.filterLfoGain.dispose();
     this.pulseWidthLfoGain.dispose();
-    this.waveform.dispose();
-    this.masterOutput.dispose();
   }
 }
