@@ -4,27 +4,24 @@ import type {
 } from '../../../domain/DrumMachine';
 
 export class BassDrumVoice {
-  private synth: Tone.MembraneSynth;
-  private toneFilter: Tone.Filter;
-  private outputGain: Tone.Gain;
+  private readonly synth: Tone.MembraneSynth;
+  private readonly toneFilter: Tone.Filter;
+  private readonly outputGain: Tone.Gain;
+
   private settings: BassDrumSettings;
 
   constructor(
     settings: BassDrumSettings,
     output: Tone.Gain,
   ) {
-    this.settings = {
-      ...settings,
-    };
+    this.settings = { ...settings };
 
     this.synth = new Tone.MembraneSynth({
       pitchDecay: 0.05,
       octaves: settings.pitchDrop,
-
       oscillator: {
         type: 'sine',
       },
-
       envelope: {
         attack: 0.001,
         decay: settings.decay,
@@ -36,48 +33,50 @@ export class BassDrumVoice {
     this.toneFilter = new Tone.Filter({
       type: 'lowpass',
       frequency: settings.tone,
+      Q: 0.7,
       rolloff: -24,
-      Q: 0.5,
     });
 
     this.outputGain = new Tone.Gain(
       settings.level,
     );
 
-    this.synth.chain(
-      this.toneFilter,
-      this.outputGain,
-      output,
-    );
+    this.synth.connect(this.toneFilter);
+    this.toneFilter.connect(this.outputGain);
+    this.outputGain.connect(output);
   }
 
-  trigger(velocity = 1): void {
-    const now = Tone.now();
-
+  trigger(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
     this.synth.triggerAttackRelease(
       this.settings.tune,
       this.settings.decay,
-      now,
+      time,
       velocity,
     );
   }
 
-  setSettings(settings: BassDrumSettings): void {
-    this.settings = {
-      ...settings,
-    };
+  setSettings(
+    settings: BassDrumSettings,
+  ): void {
+    this.settings = { ...settings };
 
-    this.synth.octaves = settings.pitchDrop;
-    this.synth.envelope.decay = settings.decay;
+    this.synth.octaves =
+      settings.pitchDrop;
+
+    this.synth.envelope.decay =
+      settings.decay;
 
     this.toneFilter.frequency.rampTo(
       settings.tone,
-      0.05,
+      0.02,
     );
 
     this.outputGain.gain.rampTo(
       settings.level,
-      0.05,
+      0.02,
     );
   }
 

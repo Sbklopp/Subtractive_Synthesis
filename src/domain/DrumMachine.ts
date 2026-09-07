@@ -35,6 +35,77 @@ export interface CymbalSettings {
   level: number;
 }
 
+export const DRUM_VOICE_IDS = [
+  'bassDrum',
+  'snare',
+  'clap',
+  'closedHiHat',
+  'openHiHat',
+  'cymbal',
+] as const;
+
+export type DrumVoiceId =
+  (typeof DRUM_VOICE_IDS)[number];
+
+export type DrumPattern = Record<
+  DrumVoiceId,
+  boolean[]
+>;
+
+export type DrumMuteState = Record<
+  DrumVoiceId,
+  boolean
+>;
+
+export const SEQUENCER_STEP_COUNT = 16;
+export const DEFAULT_DRUM_BPM = 120;
+export const MIN_DRUM_BPM = 40;
+export const MAX_DRUM_BPM = 240;
+
+export const createEmptyDrumPattern =
+  (): DrumPattern => ({
+    bassDrum: Array(SEQUENCER_STEP_COUNT).fill(false),
+    snare: Array(SEQUENCER_STEP_COUNT).fill(false),
+    clap: Array(SEQUENCER_STEP_COUNT).fill(false),
+    closedHiHat:
+      Array(SEQUENCER_STEP_COUNT).fill(false),
+    openHiHat:
+      Array(SEQUENCER_STEP_COUNT).fill(false),
+    cymbal: Array(SEQUENCER_STEP_COUNT).fill(false),
+  });
+
+export const cloneDrumPattern = (
+  pattern: DrumPattern,
+): DrumPattern => ({
+  bassDrum: [...pattern.bassDrum],
+  snare: [...pattern.snare],
+  clap: [...pattern.clap],
+  closedHiHat: [...pattern.closedHiHat],
+  openHiHat: [...pattern.openHiHat],
+  cymbal: [...pattern.cymbal],
+});
+
+export const createUnmutedDrumVoices =
+  (): DrumMuteState => ({
+    bassDrum: false,
+    snare: false,
+    clap: false,
+    closedHiHat: false,
+    openHiHat: false,
+    cymbal: false,
+  });
+
+export const cloneDrumMuteState = (
+  mutedVoices: DrumMuteState,
+): DrumMuteState => ({
+  bassDrum: mutedVoices.bassDrum,
+  snare: mutedVoices.snare,
+  clap: mutedVoices.clap,
+  closedHiHat: mutedVoices.closedHiHat,
+  openHiHat: mutedVoices.openHiHat,
+  cymbal: mutedVoices.cymbal,
+});
+
 export const DEFAULT_BASS_DRUM_SETTINGS: BassDrumSettings = {
   tune: 50,
   pitchDrop: 4,

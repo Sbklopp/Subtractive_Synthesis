@@ -2,12 +2,19 @@ import * as Tone from 'tone';
 import {
   DEFAULT_MASTER_SETTINGS,
 } from '../domain/Audio';
-import type {
-  BassDrumSettings,
-  ClapSettings,
-  CymbalSettings,
-  HiHatSettings,
-  SnareSettings,
+import {
+  DEFAULT_DRUM_BPM,
+  cloneDrumMuteState,
+  cloneDrumPattern,
+  createEmptyDrumPattern,
+  createUnmutedDrumVoices,
+  type BassDrumSettings,
+  type ClapSettings,
+  type CymbalSettings,
+  type DrumMuteState,
+  type DrumPattern,
+  type HiHatSettings,
+  type SnareSettings,
 } from '../domain/DrumMachine';
 import type {
   EnvelopeSettings,
@@ -19,12 +26,14 @@ import type {
   SynthPatch,
 } from '../domain/Synth';
 import { DrumMachine } from './drums/DrumMachine';
+import { DrumSequencer } from './drums/DrumSequencer';
 import { MasterBus } from './MasterBus';
 import { SubtractiveSynth } from './synth/SubtractiveSynth';
 
 class AudioController {
   private synth: SubtractiveSynth | null = null;
   private drumMachine: DrumMachine | null = null;
+  private drumSequencer: DrumSequencer | null = null;
   private masterBus: MasterBus | null = null;
   private initializationPromise: Promise<void> | null =
     null;
@@ -37,10 +46,19 @@ class AudioController {
   private masterMuted =
     DEFAULT_MASTER_SETTINGS.muted;
 
+  private drumPattern =
+    createEmptyDrumPattern();
+
+  private mutedDrumVoices =
+    createUnmutedDrumVoices();
+
+  private drumBpm = DEFAULT_DRUM_BPM;
+
   async initialize(): Promise<void> {
     if (
       this.synth &&
       this.drumMachine &&
+      this.drumSequencer &&
       this.masterBus
     ) {
       return;
@@ -66,6 +84,25 @@ class AudioController {
         if (!this.drumMachine) {
           this.drumMachine = new DrumMachine(
             this.masterBus.input,
+          );
+        }
+
+        if (!this.drumSequencer) {
+          this.drumSequencer =
+            new DrumSequencer(
+              this.drumMachine,
+            );
+
+          this.drumSequencer.setPattern(
+            this.drumPattern,
+          );
+
+          this.drumSequencer.setMutedVoices(
+            this.mutedDrumVoices,
+          );
+
+          this.drumSequencer.setBpm(
+            this.drumBpm,
           );
         }
       })();
@@ -249,8 +286,58 @@ class AudioController {
     settings: CymbalSettings,
   ): Promise<void> {
     await this.initialize();
-
     this.drumMachine?.setCymbalSettings(settings);
+  }
+
+  setDrumPattern(pattern: DrumPattern): void {
+    this.drumPattern =
+      cloneDrumPattern(pattern);
+
+    this.drumSequencer?.setPattern(
+      this.drumPattern,
+    );
+  }
+
+  setMutedDrumVoices(
+    mutedVoices: DrumMuteState,
+  ): void {
+    this.mutedDrumVoices =
+      cloneDrumMuteState(mutedVoices);
+
+    this.drumSequencer?.setMutedVoices(
+      this.mutedDrumVoices,
+    );
+  }
+
+  setDrumBpm(bpm: number): void {
+    this.drumBpm = bpm;
+    this.drumSequencer?.setBpm(bpm);
+  }
+
+  async startDrumSequencer(
+    onStepChange: (step: number) => void,
+  ): Promise<void> {
+    await this.initialize();
+
+    this.drumSequencer?.setPattern(
+      this.drumPattern,
+    );
+
+    this.drumSequencer?.setMutedVoices(
+      this.mutedDrumVoices,
+    );
+
+    this.drumSequencer?.setBpm(
+      this.drumBpm,
+    );
+
+    this.drumSequencer?.start(
+      onStepChange,
+    );
+  }
+
+  stopDrumSequencer(): void {
+    this.drumSequencer?.stop();
   }
 
   async setMasterVolume(
@@ -320,7 +407,10 @@ class AudioController {
       patch.oscillators.B.octave,
     );
 
-    synth.setFilterCutoff(patch.filter.cutoff);
+    synth.setFilterCutoff(
+      patch.filter.cutoff,
+    );
+
     synth.setFilterResonance(
       patch.filter.resonance,
     );
@@ -345,10 +435,12 @@ class AudioController {
   dispose(): void {
     this.noteRequestId += 1;
 
+    this.drumSequencer?.dispose();
     this.synth?.dispose();
     this.drumMachine?.dispose();
     this.masterBus?.dispose();
 
+    this.drumSequencer = null;
     this.synth = null;
     this.drumMachine = null;
     this.masterBus = null;

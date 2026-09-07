@@ -178,9 +178,10 @@ export class ClapVoice {
     this.noise.start();
   }
 
-  trigger(velocity = 1): void {
-    const now = Tone.now();
-
+  trigger(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
     const normalizedVelocity = Math.min(
       Math.max(velocity, 0),
       1,
@@ -189,7 +190,7 @@ export class ClapVoice {
     this.transientEnvelopes.forEach(
       (envelope, index) => {
         const triggerTime =
-          now +
+          time +
           TRANSIENT_OFFSETS[index] *
             this.settings.spread;
 
@@ -205,12 +206,12 @@ export class ClapVoice {
     );
 
     this.bodyEnvelope.triggerAttack(
-      now,
+      time,
       normalizedVelocity * 0.8,
     );
 
     const tailStart =
-      now + this.settings.spread * 1.8;
+      time + this.settings.spread * 1.8;
 
     this.tailEnvelope.triggerAttack(
       tailStart,
@@ -255,7 +256,6 @@ export class ClapVoice {
 
   dispose(): void {
     this.noise.dispose();
-
     this.transientFilter.dispose();
 
     this.transientEnvelopes.forEach(
@@ -265,15 +265,12 @@ export class ClapVoice {
     );
 
     this.transientGain.dispose();
-
     this.bodyFilter.dispose();
     this.bodyEnvelope.dispose();
     this.bodyGain.dispose();
-
     this.tailFilter.dispose();
     this.tailEnvelope.dispose();
     this.tailGain.dispose();
-
     this.voiceMix.dispose();
     this.saturation.dispose();
     this.outputGain.dispose();

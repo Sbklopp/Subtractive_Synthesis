@@ -9,24 +9,19 @@ import type {
   BassDrumSettings,
   ClapSettings,
   CymbalSettings,
+  DrumVoiceId,
   HiHatSettings,
   SnareSettings,
 } from '../../domain/DrumMachine';
 import { useDrumMachineStore } from '../../store/useDrumMachineStore';
+import { SequencerGrid } from '../sequencer/SequencerGrid';
+import { TransportControls } from '../sequencer/TransportControls';
 import { BassDrumControls } from './BassDrumControls';
 import { ClapControls } from './ClapControls';
 import { CymbalControls } from './CymbalControls';
 import { HiHatControls } from './HiHatControls';
 import { SnareControls } from './SnareControls';
 import './DrumMachinePanel.css';
-
-type DrumVoiceId =
-  | 'bassDrum'
-  | 'snare'
-  | 'clap'
-  | 'closedHiHat'
-  | 'openHiHat'
-  | 'cymbal';
 
 const KEYBOARD_MAP: Record<string, DrumVoiceId> = {
   KeyA: 'bassDrum',
@@ -69,12 +64,23 @@ export function DrumMachinePanel() {
     closedHiHat,
     openHiHat,
     cymbal,
+    pattern,
+    mutedVoices,
+    bpm,
+    isPlaying,
+    currentStep,
     updateBassDrum,
     updateSnare,
     updateClap,
     updateClosedHiHat,
     updateOpenHiHat,
     updateCymbal,
+    toggleStep,
+    toggleVoiceMute,
+    clearPattern,
+    setBpm,
+    setIsPlaying,
+    setCurrentStep,
   } = useDrumMachineStore();
 
   const [status, setStatus] = useState(
@@ -230,6 +236,86 @@ export function DrumMachinePanel() {
       snare,
     ],
   );
+
+  const handleToggleStep = (
+    voice: DrumVoiceId,
+    step: number,
+  ) => {
+    toggleStep(voice, step);
+
+    audioController.setDrumPattern(
+      useDrumMachineStore.getState().pattern,
+    );
+  };
+
+  const handleToggleMute = (
+    voice: DrumVoiceId,
+  ) => {
+    toggleVoiceMute(voice);
+
+    const nextMutedVoices =
+      useDrumMachineStore.getState().mutedVoices;
+
+    audioController.setMutedDrumVoices(
+      nextMutedVoices,
+    );
+
+    setStatus(
+      `${VOICE_LABELS[voice]} ${
+        nextMutedVoices[voice]
+          ? 'muted'
+          : 'unmuted'
+      }.`,
+    );
+  };
+
+  const handleBpmChange = (
+    nextBpm: number,
+  ) => {
+    setBpm(nextBpm);
+    audioController.setDrumBpm(nextBpm);
+  };
+
+  const handlePlay = async () => {
+    try {
+      audioController.setDrumPattern(pattern);
+
+      audioController.setMutedDrumVoices(
+        mutedVoices,
+      );
+
+      audioController.setDrumBpm(bpm);
+
+      await audioController.startDrumSequencer(
+        setCurrentStep,
+      );
+
+      setIsPlaying(true);
+      setStatus(`Sequencer playing at ${bpm} BPM.`);
+    } catch (error) {
+      console.error(error);
+      setIsPlaying(false);
+      setCurrentStep(-1);
+      setStatus('Unable to start the sequencer.');
+    }
+  };
+
+  const handleStop = () => {
+    audioController.stopDrumSequencer();
+    setIsPlaying(false);
+    setCurrentStep(-1);
+    setStatus('Sequencer stopped.');
+  };
+
+  const handleClear = () => {
+    clearPattern();
+
+    audioController.setDrumPattern(
+      useDrumMachineStore.getState().pattern,
+    );
+
+    setStatus('Pattern cleared.');
+  };
 
   const handlePadKeyDown = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
@@ -389,18 +475,14 @@ export function DrumMachinePanel() {
           <h2 id="drum-machine-title">
             Drum Machine
           </h2>
-
-          <p className="drum-machine-description">
-            Six adjustable synthesized drum voices.
-          </p>
         </div>
 
         <div className="drum-keyboard-help">
           <span><kbd>A</kbd> Bass</span>
           <span><kbd>S</kbd> Snare</span>
           <span><kbd>D</kbd> Clap</span>
-          <span><kbd>F</kbd> Closed Hat</span>
-          <span><kbd>G</kbd> Open Hat</span>
+          <span><kbd>F</kbd> CH</span>
+          <span><kbd>G</kbd> OH</span>
           <span><kbd>H</kbd> Cymbal</span>
         </div>
       </header>
@@ -422,7 +504,7 @@ export function DrumMachinePanel() {
 
         <article className="drum-voice-editor">
           <header className="drum-voice-header">
-            <h3>Snare Drum</h3>
+            <h3>Snare</h3>
             <span>SD</span>
           </header>
 
@@ -436,7 +518,7 @@ export function DrumMachinePanel() {
 
         <article className="drum-voice-editor">
           <header className="drum-voice-header">
-            <h3>Hand Clap</h3>
+            <h3>Clap</h3>
             <span>CP</span>
           </header>
 
@@ -450,7 +532,7 @@ export function DrumMachinePanel() {
 
         <article className="drum-voice-editor">
           <header className="drum-voice-header">
-            <h3>Closed Hi-Hat</h3>
+            <h3>Closed Hat</h3>
             <span>CH</span>
           </header>
 
@@ -467,7 +549,7 @@ export function DrumMachinePanel() {
 
         <article className="drum-voice-editor">
           <header className="drum-voice-header">
-            <h3>Open Hi-Hat</h3>
+            <h3>Open Hat</h3>
             <span>OH</span>
           </header>
 
@@ -484,7 +566,7 @@ export function DrumMachinePanel() {
 
         <article className="drum-voice-editor">
           <header className="drum-voice-header">
-            <h3>Crash Cymbal</h3>
+            <h3>Cymbal</h3>
             <span>CY</span>
           </header>
 
@@ -496,6 +578,43 @@ export function DrumMachinePanel() {
           {renderPad('cymbal', 'CY', 'H')}
         </article>
       </div>
+
+      <section
+        className="drum-sequencer-section"
+        aria-labelledby="sequencer-title"
+      >
+        <header className="sequencer-section-header">
+          <div>
+            <p className="section-eyebrow">
+              Pattern
+            </p>
+
+            <h3 id="sequencer-title">
+              16-Step Sequencer
+            </h3>
+          </div>
+
+          <TransportControls
+            bpm={bpm}
+            isPlaying={isPlaying}
+            onBpmChange={handleBpmChange}
+            onPlay={() => {
+              void handlePlay();
+            }}
+            onStop={handleStop}
+            onClear={handleClear}
+          />
+        </header>
+
+        <SequencerGrid
+          pattern={pattern}
+          mutedVoices={mutedVoices}
+          currentStep={currentStep}
+          isPlaying={isPlaying}
+          onToggleStep={handleToggleStep}
+          onToggleMute={handleToggleMute}
+        />
+      </section>
 
       <p className="drum-status" role="status">
         {status}

@@ -185,9 +185,10 @@ export class SnareVoice {
     this.noise.start();
   }
 
-  trigger(velocity = 1): void {
-    const now = Tone.now();
-
+  trigger(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
     const normalizedVelocity = Math.min(
       Math.max(velocity, 0),
       1,
@@ -203,47 +204,47 @@ export class SnareVoice {
       SECOND_OSCILLATOR_RATIO;
 
     this.bodyOscillatorA.frequency
-      .cancelScheduledValues(now);
+      .cancelScheduledValues(time);
 
     this.bodyOscillatorA.frequency
       .setValueAtTime(
         fundamentalFrequency * 1.1,
-        now,
+        time,
       );
 
     this.bodyOscillatorA.frequency
       .exponentialRampToValueAtTime(
         fundamentalFrequency,
-        now + 0.03,
+        time + 0.03,
       );
 
     this.bodyOscillatorB.frequency
-      .cancelScheduledValues(now);
+      .cancelScheduledValues(time);
 
     this.bodyOscillatorB.frequency
       .setValueAtTime(
         secondFrequency * 1.07,
-        now,
+        time,
       );
 
     this.bodyOscillatorB.frequency
       .exponentialRampToValueAtTime(
         secondFrequency,
-        now + 0.025,
+        time + 0.025,
       );
 
     this.bodyEnvelope.triggerAttack(
-      now,
+      time,
       normalizedVelocity,
     );
 
     this.noiseEnvelope.triggerAttack(
-      now,
+      time,
       normalizedVelocity,
     );
 
     this.snapEnvelope.triggerAttack(
-      now,
+      time,
       normalizedVelocity,
     );
   }

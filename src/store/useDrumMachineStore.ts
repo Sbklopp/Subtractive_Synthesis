@@ -4,11 +4,19 @@ import {
   DEFAULT_CLAP_SETTINGS,
   DEFAULT_CLOSED_HI_HAT_SETTINGS,
   DEFAULT_CYMBAL_SETTINGS,
+  DEFAULT_DRUM_BPM,
   DEFAULT_OPEN_HI_HAT_SETTINGS,
   DEFAULT_SNARE_SETTINGS,
+  MAX_DRUM_BPM,
+  MIN_DRUM_BPM,
+  createEmptyDrumPattern,
+  createUnmutedDrumVoices,
   type BassDrumSettings,
   type ClapSettings,
   type CymbalSettings,
+  type DrumMuteState,
+  type DrumPattern,
+  type DrumVoiceId,
   type HiHatSettings,
   type SnareSettings,
 } from '../domain/DrumMachine';
@@ -20,6 +28,12 @@ interface DrumMachineStore {
   closedHiHat: HiHatSettings;
   openHiHat: HiHatSettings;
   cymbal: CymbalSettings;
+
+  pattern: DrumPattern;
+  mutedVoices: DrumMuteState;
+  bpm: number;
+  isPlaying: boolean;
+  currentStep: number;
 
   updateBassDrum: (
     settings: Partial<BassDrumSettings>,
@@ -44,6 +58,21 @@ interface DrumMachineStore {
   updateCymbal: (
     settings: Partial<CymbalSettings>,
   ) => void;
+
+  toggleStep: (
+    voice: DrumVoiceId,
+    step: number,
+  ) => void;
+
+  toggleVoiceMute: (
+    voice: DrumVoiceId,
+  ) => void;
+
+  unmuteAllVoices: () => void;
+  clearPattern: () => void;
+  setBpm: (bpm: number) => void;
+  setIsPlaying: (isPlaying: boolean) => void;
+  setCurrentStep: (step: number) => void;
 
   resetBassDrum: () => void;
   resetSnare: () => void;
@@ -79,6 +108,12 @@ export const useDrumMachineStore =
     cymbal: {
       ...DEFAULT_CYMBAL_SETTINGS,
     },
+
+    pattern: createEmptyDrumPattern(),
+    mutedVoices: createUnmutedDrumVoices(),
+    bpm: DEFAULT_DRUM_BPM,
+    isPlaying: false,
+    currentStep: -1,
 
     updateBassDrum: (settings) =>
       set((state) => ({
@@ -127,6 +162,57 @@ export const useDrumMachineStore =
           ...settings,
         },
       })),
+
+    toggleStep: (voice, step) =>
+      set((state) => {
+        const nextVoiceSteps = [
+          ...state.pattern[voice],
+        ];
+
+        nextVoiceSteps[step] =
+          !nextVoiceSteps[step];
+
+        return {
+          pattern: {
+            ...state.pattern,
+            [voice]: nextVoiceSteps,
+          },
+        };
+      }),
+
+    toggleVoiceMute: (voice) =>
+      set((state) => ({
+        mutedVoices: {
+          ...state.mutedVoices,
+          [voice]:
+            !state.mutedVoices[voice],
+        },
+      })),
+
+    unmuteAllVoices: () =>
+      set({
+        mutedVoices:
+          createUnmutedDrumVoices(),
+      }),
+
+    clearPattern: () =>
+      set({
+        pattern: createEmptyDrumPattern(),
+      }),
+
+    setBpm: (bpm) =>
+      set({
+        bpm: Math.min(
+          Math.max(bpm, MIN_DRUM_BPM),
+          MAX_DRUM_BPM,
+        ),
+      }),
+
+    setIsPlaying: (isPlaying) =>
+      set({ isPlaying }),
+
+    setCurrentStep: (currentStep) =>
+      set({ currentStep }),
 
     resetBassDrum: () =>
       set({

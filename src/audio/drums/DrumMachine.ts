@@ -9,6 +9,7 @@ import {
   type BassDrumSettings,
   type ClapSettings,
   type CymbalSettings,
+  type DrumVoiceId,
   type HiHatSettings,
   type SnareSettings,
 } from '../../domain/DrumMachine';
@@ -58,34 +59,80 @@ export class DrumMachine {
     );
   }
 
-  triggerBassDrum(velocity = 1): void {
-    this.bassDrum.trigger(velocity);
+  triggerVoice(
+    voice: DrumVoiceId,
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    switch (voice) {
+      case 'bassDrum':
+        this.triggerBassDrum(velocity, time);
+        break;
+
+      case 'snare':
+        this.triggerSnare(velocity, time);
+        break;
+
+      case 'clap':
+        this.triggerClap(velocity, time);
+        break;
+
+      case 'closedHiHat':
+        this.triggerClosedHiHat(velocity, time);
+        break;
+
+      case 'openHiHat':
+        this.triggerOpenHiHat(velocity, time);
+        break;
+
+      case 'cymbal':
+        this.triggerCymbal(velocity, time);
+        break;
+    }
   }
 
-  triggerSnare(velocity = 1): void {
-    this.snare.trigger(velocity);
+  triggerBassDrum(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    this.bassDrum.trigger(velocity, time);
   }
 
-  triggerClap(velocity = 1): void {
-    this.clap.trigger(velocity);
+  triggerSnare(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    this.snare.trigger(velocity, time);
   }
 
-  triggerClosedHiHat(velocity = 1): void {
-    const now = Tone.now();
-
-    this.openHiHat.choke(now);
-    this.closedHiHat.trigger(velocity, now);
+  triggerClap(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    this.clap.trigger(velocity, time);
   }
 
-  triggerOpenHiHat(velocity = 1): void {
-    const now = Tone.now();
-
-    this.closedHiHat.choke(now);
-    this.openHiHat.trigger(velocity, now);
+  triggerClosedHiHat(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    this.openHiHat.choke(time);
+    this.closedHiHat.trigger(velocity, time);
   }
 
-  triggerCymbal(velocity = 1): void {
-    this.cymbal.trigger(velocity);
+  triggerOpenHiHat(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    this.closedHiHat.choke(time);
+    this.openHiHat.trigger(velocity, time);
+  }
+
+  triggerCymbal(
+    velocity = 1,
+    time = Tone.now(),
+  ): void {
+    this.cymbal.trigger(velocity, time);
   }
 
   setBassDrumSettings(
