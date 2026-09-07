@@ -2,9 +2,14 @@ import { create } from 'zustand';
 import {
   DEFAULT_BASS_DRUM_SETTINGS,
   DEFAULT_CLAP_SETTINGS,
+  DEFAULT_CLOSED_HI_HAT_SETTINGS,
+  DEFAULT_CYMBAL_SETTINGS,
+  DEFAULT_OPEN_HI_HAT_SETTINGS,
   DEFAULT_SNARE_SETTINGS,
   type BassDrumSettings,
   type ClapSettings,
+  type CymbalSettings,
+  type HiHatSettings,
   type SnareSettings,
 } from '../domain/DrumMachine';
 
@@ -12,6 +17,9 @@ interface DrumMachineStore {
   bassDrum: BassDrumSettings;
   snare: SnareSettings;
   clap: ClapSettings;
+  closedHiHat: HiHatSettings;
+  openHiHat: HiHatSettings;
+  cymbal: CymbalSettings;
 
   updateBassDrum: (
     settings: Partial<BassDrumSettings>,
@@ -25,9 +33,24 @@ interface DrumMachineStore {
     settings: Partial<ClapSettings>,
   ) => void;
 
+  updateClosedHiHat: (
+    settings: Partial<HiHatSettings>,
+  ) => void;
+
+  updateOpenHiHat: (
+    settings: Partial<HiHatSettings>,
+  ) => void;
+
+  updateCymbal: (
+    settings: Partial<CymbalSettings>,
+  ) => void;
+
   resetBassDrum: () => void;
   resetSnare: () => void;
   resetClap: () => void;
+  resetClosedHiHat: () => void;
+  resetOpenHiHat: () => void;
+  resetCymbal: () => void;
   resetAllDrums: () => void;
 }
 
@@ -43,6 +66,18 @@ export const useDrumMachineStore =
 
     clap: {
       ...DEFAULT_CLAP_SETTINGS,
+    },
+
+    closedHiHat: {
+      ...DEFAULT_CLOSED_HI_HAT_SETTINGS,
+    },
+
+    openHiHat: {
+      ...DEFAULT_OPEN_HI_HAT_SETTINGS,
+    },
+
+    cymbal: {
+      ...DEFAULT_CYMBAL_SETTINGS,
     },
 
     updateBassDrum: (settings) =>
@@ -69,6 +104,30 @@ export const useDrumMachineStore =
         },
       })),
 
+    updateClosedHiHat: (settings) =>
+      set((state) => ({
+        closedHiHat: {
+          ...state.closedHiHat,
+          ...settings,
+        },
+      })),
+
+    updateOpenHiHat: (settings) =>
+      set((state) => ({
+        openHiHat: {
+          ...state.openHiHat,
+          ...settings,
+        },
+      })),
+
+    updateCymbal: (settings) =>
+      set((state) => ({
+        cymbal: {
+          ...state.cymbal,
+          ...settings,
+        },
+      })),
+
     resetBassDrum: () =>
       set({
         bassDrum: {
@@ -90,6 +149,27 @@ export const useDrumMachineStore =
         },
       }),
 
+    resetClosedHiHat: () =>
+      set({
+        closedHiHat: {
+          ...DEFAULT_CLOSED_HI_HAT_SETTINGS,
+        },
+      }),
+
+    resetOpenHiHat: () =>
+      set({
+        openHiHat: {
+          ...DEFAULT_OPEN_HI_HAT_SETTINGS,
+        },
+      }),
+
+    resetCymbal: () =>
+      set({
+        cymbal: {
+          ...DEFAULT_CYMBAL_SETTINGS,
+        },
+      }),
+
     resetAllDrums: () =>
       set({
         bassDrum: {
@@ -100,6 +180,15 @@ export const useDrumMachineStore =
         },
         clap: {
           ...DEFAULT_CLAP_SETTINGS,
+        },
+        closedHiHat: {
+          ...DEFAULT_CLOSED_HI_HAT_SETTINGS,
+        },
+        openHiHat: {
+          ...DEFAULT_OPEN_HI_HAT_SETTINGS,
+        },
+        cymbal: {
+          ...DEFAULT_CYMBAL_SETTINGS,
         },
       }),
   }));

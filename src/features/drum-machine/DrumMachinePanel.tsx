@@ -8,32 +8,47 @@ import { audioController } from '../../audio/AudioController';
 import type {
   BassDrumSettings,
   ClapSettings,
+  CymbalSettings,
+  HiHatSettings,
   SnareSettings,
 } from '../../domain/DrumMachine';
 import { useDrumMachineStore } from '../../store/useDrumMachineStore';
 import { BassDrumControls } from './BassDrumControls';
 import { ClapControls } from './ClapControls';
+import { CymbalControls } from './CymbalControls';
+import { HiHatControls } from './HiHatControls';
 import { SnareControls } from './SnareControls';
 import './DrumMachinePanel.css';
 
 type DrumVoiceId =
   | 'bassDrum'
   | 'snare'
-  | 'clap';
+  | 'clap'
+  | 'closedHiHat'
+  | 'openHiHat'
+  | 'cymbal';
 
 const KEYBOARD_MAP: Record<string, DrumVoiceId> = {
   KeyA: 'bassDrum',
   KeyS: 'snare',
   KeyD: 'clap',
+  KeyF: 'closedHiHat',
+  KeyG: 'openHiHat',
+  KeyH: 'cymbal',
 };
 
 const VOICE_LABELS: Record<DrumVoiceId, string> = {
   bassDrum: 'Bass drum',
   snare: 'Snare',
   clap: 'Clap',
+  closedHiHat: 'Closed hi-hat',
+  openHiHat: 'Open hi-hat',
+  cymbal: 'Cymbal',
 };
 
-function isEditableTarget(target: EventTarget | null): boolean {
+function isEditableTarget(
+  target: EventTarget | null,
+): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
   }
@@ -51,13 +66,19 @@ export function DrumMachinePanel() {
     bassDrum,
     snare,
     clap,
+    closedHiHat,
+    openHiHat,
+    cymbal,
     updateBassDrum,
     updateSnare,
     updateClap,
+    updateClosedHiHat,
+    updateOpenHiHat,
+    updateCymbal,
   } = useDrumMachineStore();
 
   const [status, setStatus] = useState(
-    'Bass drum, snare, and clap ready.',
+    'All drum voices ready.',
   );
 
   const [activeVoices, setActiveVoices] = useState<
@@ -84,58 +105,113 @@ export function DrumMachinePanel() {
   const handleBassDrumChange = (
     changes: Partial<BassDrumSettings>,
   ) => {
-    const nextSettings = {
-      ...bassDrum,
-      ...changes,
-    };
+    const next = { ...bassDrum, ...changes };
 
     updateBassDrum(changes);
-    audioController.setBassDrumSettings(nextSettings);
+    void audioController.setBassDrumSettings(next);
   };
 
   const handleSnareChange = (
     changes: Partial<SnareSettings>,
   ) => {
-    const nextSettings = {
-      ...snare,
-      ...changes,
-    };
+    const next = { ...snare, ...changes };
 
     updateSnare(changes);
-    audioController.setSnareSettings(nextSettings);
+    void audioController.setSnareSettings(next);
   };
 
   const handleClapChange = (
     changes: Partial<ClapSettings>,
   ) => {
-    const nextSettings = {
-      ...clap,
+    const next = { ...clap, ...changes };
+
+    updateClap(changes);
+    void audioController.setClapSettings(next);
+  };
+
+  const handleClosedHiHatChange = (
+    changes: Partial<HiHatSettings>,
+  ) => {
+    const next = {
+      ...closedHiHat,
       ...changes,
     };
 
-    updateClap(changes);
-    audioController.setClapSettings(nextSettings);
+    updateClosedHiHat(changes);
+
+    void audioController.setClosedHiHatSettings(
+      next,
+    );
+  };
+
+  const handleOpenHiHatChange = (
+    changes: Partial<HiHatSettings>,
+  ) => {
+    const next = {
+      ...openHiHat,
+      ...changes,
+    };
+
+    updateOpenHiHat(changes);
+
+    void audioController.setOpenHiHatSettings(
+      next,
+    );
+  };
+
+  const handleCymbalChange = (
+    changes: Partial<CymbalSettings>,
+  ) => {
+    const next = { ...cymbal, ...changes };
+
+    updateCymbal(changes);
+    void audioController.setCymbalSettings(next);
   };
 
   const triggerVoice = useCallback(
     async (voice: DrumVoiceId) => {
       try {
-        await audioController.initialize();
-
         switch (voice) {
           case 'bassDrum':
-            audioController.setBassDrumSettings(bassDrum);
+            await audioController.setBassDrumSettings(
+              bassDrum,
+            );
             await audioController.triggerBassDrum();
             break;
 
           case 'snare':
-            audioController.setSnareSettings(snare);
+            await audioController.setSnareSettings(
+              snare,
+            );
             await audioController.triggerSnare();
             break;
 
           case 'clap':
-            audioController.setClapSettings(clap);
+            await audioController.setClapSettings(
+              clap,
+            );
             await audioController.triggerClap();
+            break;
+
+          case 'closedHiHat':
+            await audioController.setClosedHiHatSettings(
+              closedHiHat,
+            );
+            await audioController.triggerClosedHiHat();
+            break;
+
+          case 'openHiHat':
+            await audioController.setOpenHiHatSettings(
+              openHiHat,
+            );
+            await audioController.triggerOpenHiHat();
+            break;
+
+          case 'cymbal':
+            await audioController.setCymbalSettings(
+              cymbal,
+            );
+            await audioController.triggerCymbal();
             break;
         }
 
@@ -145,7 +221,14 @@ export function DrumMachinePanel() {
         setStatus('Unable to start audio.');
       }
     },
-    [bassDrum, snare, clap],
+    [
+      bassDrum,
+      clap,
+      closedHiHat,
+      cymbal,
+      openHiHat,
+      snare,
+    ],
   );
 
   const handlePadKeyDown = (
@@ -182,7 +265,9 @@ export function DrumMachinePanel() {
   };
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (
+      event: KeyboardEvent,
+    ) => {
       const voice = KEYBOARD_MAP[event.code];
 
       if (
@@ -201,33 +286,46 @@ export function DrumMachinePanel() {
       void triggerVoice(voice);
     };
 
-    const handleKeyUp = (event: KeyboardEvent) => {
+    const handleKeyUp = (
+      event: KeyboardEvent,
+    ) => {
       const voice = KEYBOARD_MAP[event.code];
 
-      if (!voice) {
-        return;
+      if (voice) {
+        setVoiceActive(voice, false);
       }
-
-      setVoiceActive(voice, false);
     };
 
     const handleWindowBlur = () => {
       setActiveVoices(new Set());
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    );
+
+    window.addEventListener(
+      'keyup',
+      handleKeyUp,
+    );
+
+    window.addEventListener(
+      'blur',
+      handleWindowBlur,
+    );
 
     return () => {
       window.removeEventListener(
         'keydown',
         handleKeyDown,
       );
+
       window.removeEventListener(
         'keyup',
         handleKeyUp,
       );
+
       window.removeEventListener(
         'blur',
         handleWindowBlur,
@@ -293,96 +391,110 @@ export function DrumMachinePanel() {
           </h2>
 
           <p className="drum-machine-description">
-            Each drum is generated by its own
-            adjustable synthesis voice.
+            Six adjustable synthesized drum voices.
           </p>
         </div>
 
-        <div
-          className="drum-keyboard-help"
-          aria-label="Drum keyboard controls"
-        >
-          <span>
-            <kbd>A</kbd> Bass
-          </span>
-
-          <span>
-            <kbd>S</kbd> Snare
-          </span>
-
-          <span>
-            <kbd>D</kbd> Clap
-          </span>
+        <div className="drum-keyboard-help">
+          <span><kbd>A</kbd> Bass</span>
+          <span><kbd>S</kbd> Snare</span>
+          <span><kbd>D</kbd> Clap</span>
+          <span><kbd>F</kbd> Closed Hat</span>
+          <span><kbd>G</kbd> Open Hat</span>
+          <span><kbd>H</kbd> Cymbal</span>
         </div>
       </header>
 
-      <div className="drum-workspace">
-        <div className="implemented-voices">
-          <article className="drum-voice-editor">
-            <header className="drum-voice-header">
-              <h3>Bass Drum</h3>
-              <span>BD</span>
-            </header>
+      <div className="implemented-voices">
+        <article className="drum-voice-editor">
+          <header className="drum-voice-header">
+            <h3>Bass Drum</h3>
+            <span>BD</span>
+          </header>
 
-            <BassDrumControls
-              settings={bassDrum}
-              onChange={handleBassDrumChange}
-            />
+          <BassDrumControls
+            settings={bassDrum}
+            onChange={handleBassDrumChange}
+          />
 
-            {renderPad('bassDrum', 'BD', 'A')}
-          </article>
+          {renderPad('bassDrum', 'BD', 'A')}
+        </article>
 
-          <article className="drum-voice-editor">
-            <header className="drum-voice-header">
-              <h3>Snare Drum</h3>
-              <span>SD</span>
-            </header>
+        <article className="drum-voice-editor">
+          <header className="drum-voice-header">
+            <h3>Snare Drum</h3>
+            <span>SD</span>
+          </header>
 
-            <SnareControls
-              settings={snare}
-              onChange={handleSnareChange}
-            />
+          <SnareControls
+            settings={snare}
+            onChange={handleSnareChange}
+          />
 
-            {renderPad('snare', 'SD', 'S')}
-          </article>
+          {renderPad('snare', 'SD', 'S')}
+        </article>
 
-          <article className="drum-voice-editor">
-            <header className="drum-voice-header">
-              <h3>Hand Clap</h3>
-              <span>CP</span>
-            </header>
+        <article className="drum-voice-editor">
+          <header className="drum-voice-header">
+            <h3>Hand Clap</h3>
+            <span>CP</span>
+          </header>
 
-            <ClapControls
-              settings={clap}
-              onChange={handleClapChange}
-            />
+          <ClapControls
+            settings={clap}
+            onChange={handleClapChange}
+          />
 
-            {renderPad('clap', 'CP', 'D')}
-          </article>
-        </div>
+          {renderPad('clap', 'CP', 'D')}
+        </article>
 
-        <aside className="upcoming-drums">
-          <div>
-            <p className="section-eyebrow">
-              Coming next
-            </p>
-            <h3>Additional voices</h3>
-          </div>
+        <article className="drum-voice-editor">
+          <header className="drum-voice-header">
+            <h3>Closed Hi-Hat</h3>
+            <span>CH</span>
+          </header>
 
-          <div className="upcoming-drum-grid">
-            <div className="upcoming-drum">
-              Closed Hi-Hat
-            </div>
+          <HiHatControls
+            idPrefix="closed-hi-hat"
+            name="Closed hi-hat"
+            settings={closedHiHat}
+            maxDecay={0.4}
+            onChange={handleClosedHiHatChange}
+          />
 
-            <div className="upcoming-drum">
-              Open Hi-Hat
-            </div>
+          {renderPad('closedHiHat', 'CH', 'F')}
+        </article>
 
-            <div className="upcoming-drum">
-              Tom
-            </div>
-          </div>
-        </aside>
+        <article className="drum-voice-editor">
+          <header className="drum-voice-header">
+            <h3>Open Hi-Hat</h3>
+            <span>OH</span>
+          </header>
+
+          <HiHatControls
+            idPrefix="open-hi-hat"
+            name="Open hi-hat"
+            settings={openHiHat}
+            maxDecay={2.5}
+            onChange={handleOpenHiHatChange}
+          />
+
+          {renderPad('openHiHat', 'OH', 'G')}
+        </article>
+
+        <article className="drum-voice-editor">
+          <header className="drum-voice-header">
+            <h3>Crash Cymbal</h3>
+            <span>CY</span>
+          </header>
+
+          <CymbalControls
+            settings={cymbal}
+            onChange={handleCymbalChange}
+          />
+
+          {renderPad('cymbal', 'CY', 'H')}
+        </article>
       </div>
 
       <p className="drum-status" role="status">
