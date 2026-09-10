@@ -1,23 +1,27 @@
 import * as Tone from 'tone';
 import {
-  DEFAULT_DRUM_BPM,
-  DRUM_VOICE_IDS,
-  MAX_DRUM_BPM,
-  MIN_DRUM_BPM,
-  SEQUENCER_STEP_COUNT,
   cloneDrumMuteState,
   cloneDrumPattern,
   createEmptyDrumPattern,
   createUnmutedDrumVoices,
-  type DrumMuteState,
-  type DrumPattern,
+  DEFAULT_DRUM_BPM,
+  DEFAULT_DRUM_SWING,
+  DRUM_STEP_VELOCITIES,
+  DRUM_VOICE_IDS,
+  MAX_DRUM_BPM,
+  MAX_DRUM_SWING,
+  MIN_DRUM_BPM,
+  MIN_DRUM_SWING,
+  SEQUENCER_STEP_COUNT,
 } from '../../domain/DrumMachine';
 import type {
-  DrumMachine,
-} from './DrumMachine';
+  DrumMuteState,
+  DrumPattern,
+} from '../../domain/DrumMachine';
+import { DrumMachine } from './DrumMachine';
 
 type StepChangeHandler = (
-  step: number,
+  stepIndex: number,
 ) => void;
 
 export class DrumSequencer {
@@ -30,10 +34,11 @@ export class DrumSequencer {
     createUnmutedDrumVoices();
 
   private bpm = DEFAULT_DRUM_BPM;
+  private swing = DEFAULT_DRUM_SWING;
+
   private currentStep = 0;
-  private repeatEventId: number | null = null;
+  private scheduleId: number | null = null;
   private isPlaying = false;
-  private runId = 0;
 
   private onStepChange:
     | StepChangeHandler
@@ -56,17 +61,23 @@ export class DrumSequencer {
 
   setBpm(bpm: number): void {
     this.bpm = Math.min(
-      Math.max(bpm, MIN_DRUM_BPM),
       MAX_DRUM_BPM,
+      Math.max(MIN_DRUM_BPM, bpm),
+    );
+
+    Tone.getTransport().bpm.value = this.bpm;
+  }
+
+  setSwing(swing: number): void {
+    this.swing = Math.min(
+      MAX_DRUM_SWING,
+      Math.max(MIN_DRUM_SWING, swing),
     );
 
     const transport = Tone.getTransport();
 
-    if (this.isPlaying) {
-      transport.bpm.rampTo(this.bpm, 0.05);
-    } else {
-      transport.bpm.value = this.bpm;
-    }
+    transport.swingSubdivision = '16n';
+    transport.swing = this.swing;
   }
 
   start(
@@ -80,92 +91,87 @@ export class DrumSequencer {
 
     const transport = Tone.getTransport();
 
-    this.isPlaying = true;
+    transport.bpm.value = this.bpm;
+    transport.swingSubdivision = '16n';
+    transport.swing = this.swing;
+    transport.position = 0;
+
     this.currentStep = 0;
-    this.runId += 1;
 
-    if (this.repeatEventId === null) {
-      this.repeatEventId =
-        transport.scheduleRepeat(
-          (time) => {
-            this.playStep(
-              this.currentStep,
-              time,
-            );
+    if (this.scheduleId === null) {
+      this.scheduleId =
+        transport.scheduleRepeat((time) => {
+          const stepIndex = this.currentStep;
 
-            const displayedStep =
-              this.currentStep;
+          this.playStep(stepIndex, time);
 
-            const scheduledRunId =
-              this.runId;
+          Tone.getDraw().schedule(() => {
+            this.onStepChange?.(stepIndex);
+          }, time);
 
-            Tone.getDraw().schedule(() => {
-              if (
-                this.isPlaying &&
-                scheduledRunId === this.runId
-              ) {
-                this.onStepChange?.(
-                  displayedStep,
-                );
-              }
-            }, time);
-
-            this.currentStep =
-              (this.currentStep + 1) %
-              SEQUENCER_STEP_COUNT;
-          },
-          '16n',
-        );
+          this.currentStep =
+            (stepIndex + 1) %
+            SEQUENCER_STEP_COUNT;
+        }, '16n');
     }
 
-    transport.bpm.value = this.bpm;
-    transport.position = '0:0:0';
+    this.isPlaying = true;
     transport.start();
   }
 
   stop(): void {
+    if (!this.isPlaying) {
+      return;
+    }
+
     const transport = Tone.getTransport();
 
-    this.isPlaying = false;
-    this.runId += 1;
-    this.currentStep = 0;
-
     transport.stop();
-    transport.position = '0:0:0';
+    transport.position = 0;
 
-    this.onStepChange?.(-1);
+    this.currentStep = 0;
+    this.isPlaying = false;
+  }
+
+  private playStep(
+    stepIndex: number,
+    time: number,
+  ): void {
+    for (const voiceId of DRUM_VOICE_IDS) {
+      if (this.mutedVoices[voiceId]) {
+        continue;
+      }
+
+      const stepState =
+        this.pattern[voiceId][stepIndex] ??
+        'off';
+
+      const velocity =
+        DRUM_STEP_VELOCITIES[stepState];
+
+      if (velocity === 0) {
+        continue;
+      }
+
+      this.drumMachine.triggerVoice(
+        voiceId,
+        velocity,
+        time,
+      );
+    }
   }
 
   dispose(): void {
     this.stop();
 
-    if (this.repeatEventId !== null) {
+    if (this.scheduleId !== null) {
       Tone.getTransport().clear(
-        this.repeatEventId,
+        this.scheduleId,
       );
 
-      this.repeatEventId = null;
+      this.scheduleId = null;
     }
 
     this.onStepChange = null;
-  }
-
-  private playStep(
-    step: number,
-    time: number,
-  ): void {
-    DRUM_VOICE_IDS.forEach((voice) => {
-      const shouldPlay =
-        this.pattern[voice][step] &&
-        !this.mutedVoices[voice];
-
-      if (shouldPlay) {
-        this.drumMachine.triggerVoice(
-          voice,
-          1,
-          time,
-        );
-      }
-    });
   }
 }

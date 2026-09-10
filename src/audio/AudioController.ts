@@ -4,6 +4,7 @@ import {
 } from '../domain/Audio';
 import {
   DEFAULT_DRUM_BPM,
+  DEFAULT_DRUM_SWING,
   cloneDrumMuteState,
   cloneDrumPattern,
   createEmptyDrumPattern,
@@ -53,6 +54,7 @@ class AudioController {
     createUnmutedDrumVoices();
 
   private drumBpm = DEFAULT_DRUM_BPM;
+  private drumSwing = DEFAULT_DRUM_SWING;
 
   async initialize(): Promise<void> {
     if (
@@ -103,6 +105,10 @@ class AudioController {
 
           this.drumSequencer.setBpm(
             this.drumBpm,
+          );
+
+          this.drumSequencer.setSwing(
+            this.drumSwing,
           );
         }
       })();
@@ -314,6 +320,11 @@ class AudioController {
     this.drumSequencer?.setBpm(bpm);
   }
 
+  setDrumSwing(swing: number): void {
+    this.drumSwing = swing;
+    this.drumSequencer?.setSwing(swing);
+  }
+
   async startDrumSequencer(
     onStepChange: (step: number) => void,
   ): Promise<void> {
@@ -329,6 +340,10 @@ class AudioController {
 
     this.drumSequencer?.setBpm(
       this.drumBpm,
+    );
+
+    this.drumSequencer?.setSwing(
+      this.drumSwing,
     );
 
     this.drumSequencer?.start(

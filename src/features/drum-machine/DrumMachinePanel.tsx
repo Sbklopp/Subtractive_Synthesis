@@ -67,6 +67,7 @@ export function DrumMachinePanel() {
     pattern,
     mutedVoices,
     bpm,
+    swing,
     isPlaying,
     currentStep,
     updateBassDrum,
@@ -75,10 +76,11 @@ export function DrumMachinePanel() {
     updateClosedHiHat,
     updateOpenHiHat,
     updateCymbal,
-    toggleStep,
+    cycleStep,
     toggleVoiceMute,
     clearPattern,
     setBpm,
+    setSwing,
     setIsPlaying,
     setCurrentStep,
   } = useDrumMachineStore();
@@ -237,11 +239,11 @@ export function DrumMachinePanel() {
     ],
   );
 
-  const handleToggleStep = (
+  const handleCycleStep = (
     voice: DrumVoiceId,
     step: number,
   ) => {
-    toggleStep(voice, step);
+    cycleStep(voice, step);
 
     audioController.setDrumPattern(
       useDrumMachineStore.getState().pattern,
@@ -276,6 +278,19 @@ export function DrumMachinePanel() {
     audioController.setDrumBpm(nextBpm);
   };
 
+  const handleSwingChange = (
+    nextSwing: number,
+  ) => {
+    setSwing(nextSwing);
+    audioController.setDrumSwing(nextSwing);
+
+    setStatus(
+      `Swing set to ${Math.round(
+        nextSwing * 100,
+      )}%.`,
+    );
+  };
+
   const handlePlay = async () => {
     try {
       audioController.setDrumPattern(pattern);
@@ -285,6 +300,7 @@ export function DrumMachinePanel() {
       );
 
       audioController.setDrumBpm(bpm);
+      audioController.setDrumSwing(swing);
 
       await audioController.startDrumSequencer(
         setCurrentStep,
@@ -596,8 +612,10 @@ export function DrumMachinePanel() {
 
           <TransportControls
             bpm={bpm}
+            swing={swing}
             isPlaying={isPlaying}
             onBpmChange={handleBpmChange}
+            onSwingChange={handleSwingChange}
             onPlay={() => {
               void handlePlay();
             }}
@@ -611,7 +629,7 @@ export function DrumMachinePanel() {
           mutedVoices={mutedVoices}
           currentStep={currentStep}
           isPlaying={isPlaying}
-          onToggleStep={handleToggleStep}
+          onCycleStep={handleCycleStep}
           onToggleMute={handleToggleMute}
         />
       </section>

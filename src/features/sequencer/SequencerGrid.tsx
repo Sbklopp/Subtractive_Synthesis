@@ -1,9 +1,18 @@
 import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
   DRUM_VOICE_IDS,
-  SEQUENCER_STEP_COUNT,
-  type DrumMuteState,
-  type DrumPattern,
-  type DrumVoiceId,
+  SEQUENCER_PAGE_COUNT,
+  SEQUENCER_PAGE_SIZE,
+} from '../../domain/DrumMachine';
+import type {
+  DrumMuteState,
+  DrumPattern,
+  DrumStepState,
+  DrumVoiceId,
 } from '../../domain/DrumMachine';
 import './Sequencer.css';
 
@@ -12,182 +21,268 @@ interface SequencerGridProps {
   mutedVoices: DrumMuteState;
   currentStep: number;
   isPlaying: boolean;
-
-  onToggleStep: (
-    voice: DrumVoiceId,
-    step: number,
+  onCycleStep: (
+    voiceId: DrumVoiceId,
+    stepIndex: number,
   ) => void;
-
   onToggleMute: (
-    voice: DrumVoiceId,
+    voiceId: DrumVoiceId,
   ) => void;
 }
 
-const VOICE_DETAILS: Record<
+const VOICE_LABELS: Record<
   DrumVoiceId,
-  {
-    abbreviation: string;
-    label: string;
-  }
+  string
 > = {
-  bassDrum: {
-    abbreviation: 'BD',
-    label: 'Bass drum',
-  },
-  snare: {
-    abbreviation: 'SD',
-    label: 'Snare',
-  },
-  clap: {
-    abbreviation: 'CP',
-    label: 'Clap',
-  },
-  closedHiHat: {
-    abbreviation: 'CH',
-    label: 'Closed hi-hat',
-  },
-  openHiHat: {
-    abbreviation: 'OH',
-    label: 'Open hi-hat',
-  },
-  cymbal: {
-    abbreviation: 'CY',
-    label: 'Cymbal',
-  },
+  bassDrum: 'Bass',
+  snare: 'Snare',
+  clap: 'Clap',
+  closedHiHat: 'Closed',
+  openHiHat: 'Open',
+  cymbal: 'Cymbal',
 };
+
+function getStepSymbol(
+  state: DrumStepState,
+): string {
+  switch (state) {
+    case 'normal':
+      return '●';
+
+    case 'accent':
+      return '◆';
+
+    case 'off':
+      return '';
+  }
+}
 
 export function SequencerGrid({
   pattern,
   mutedVoices,
   currentStep,
   isPlaying,
-  onToggleStep,
+  onCycleStep,
   onToggleMute,
 }: SequencerGridProps) {
-  const steps = Array.from(
-    { length: SEQUENCER_STEP_COUNT },
-    (_, index) => index,
+  const [selectedPage, setSelectedPage] =
+    useState(0);
+
+  const pageIndexes = useMemo(
+    () =>
+      Array.from(
+        { length: SEQUENCER_PAGE_COUNT },
+        (_, index) => index,
+      ),
+    [],
   );
 
-  return (
-    <div className="sequencer-scroll">
-      <div className="sequencer-grid">
-        <div className="sequencer-header-row">
-          <div className="sequencer-corner">
-            Voice
-          </div>
+  const visibleStepIndexes = useMemo(() => {
+    const firstStep =
+      selectedPage * SEQUENCER_PAGE_SIZE;
 
-          {steps.map((step) => (
-            <div
-              className={`sequencer-step-number ${
-                step % 4 === 0
-                  ? 'is-beat-start'
-                  : ''
-              }`}
-              key={step}
-            >
-              {step + 1}
-            </div>
-          ))}
+    return Array.from(
+      { length: SEQUENCER_PAGE_SIZE },
+      (_, index) => firstStep + index,
+    );
+  }, [selectedPage]);
+
+  useEffect(() => {
+    if (!isPlaying || currentStep < 0) {
+      return;
+    }
+
+    const activePage = Math.floor(
+      currentStep / SEQUENCER_PAGE_SIZE,
+    );
+
+    if (
+      activePage >= 0 &&
+      activePage < SEQUENCER_PAGE_COUNT
+    ) {
+      setSelectedPage(activePage);
+    }
+  }, [currentStep, isPlaying]);
+
+  return (
+    <div className="sequencer-editor">
+      <div className="sequencer-editor__toolbar">
+        <div
+          className="sequencer-pages"
+          role="group"
+          aria-label="Sequencer page"
+        >
+          {pageIndexes.map((pageIndex) => {
+            const firstStep =
+              pageIndex *
+                SEQUENCER_PAGE_SIZE +
+              1;
+
+            const lastStep =
+              firstStep +
+              SEQUENCER_PAGE_SIZE -
+              1;
+
+            const isSelected =
+              selectedPage === pageIndex;
+
+            return (
+              <button
+                key={pageIndex}
+                type="button"
+                className={[
+                  'sequencer-page-button',
+                  isSelected
+                    ? 'sequencer-page-button--selected'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-pressed={isSelected}
+                onClick={() =>
+                  setSelectedPage(pageIndex)
+                }
+              >
+                {firstStep}–{lastStep}
+              </button>
+            );
+          })}
         </div>
 
-        {DRUM_VOICE_IDS.map((voice) => {
-          const isMuted =
-            mutedVoices[voice];
+        <div className="sequencer-legend">
+          <span>
+            <span className="sequencer-legend__normal">
+              ●
+            </span>{' '}
+            Normal
+          </span>
 
-          return (
-            <div
-              className={`sequencer-row ${
-                isMuted ? 'is-muted' : ''
-              }`}
-              key={voice}
-            >
-              <div className="sequencer-voice-label">
-                <div
-                  className="sequencer-voice-name"
-                  title={
-                    VOICE_DETAILS[voice].label
-                  }
+          <span>
+            <span className="sequencer-legend__accent">
+              ◆
+            </span>{' '}
+            Accent
+          </span>
+        </div>
+      </div>
+
+      <div className="sequencer-grid-scroll">
+        <div className="sequencer-grid">
+          <div className="sequencer-row sequencer-row--header">
+            <span>Voice</span>
+            <span>Mute</span>
+
+            {visibleStepIndexes.map(
+              (stepIndex) => (
+                <span
+                  key={stepIndex}
+                  className={[
+                    'sequencer-step-number',
+                    stepIndex % 4 === 0
+                      ? 'sequencer-step-number--beat'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
-                  <strong>
-                    {
-                      VOICE_DETAILS[voice]
-                        .abbreviation
-                    }
-                  </strong>
+                  {stepIndex + 1}
+                </span>
+              ),
+            )}
+          </div>
 
-                  <span>
-                    {VOICE_DETAILS[voice].label}
-                  </span>
-                </div>
+          {DRUM_VOICE_IDS.map((voiceId) => {
+            const isMuted =
+              mutedVoices[voiceId];
+
+            return (
+              <div
+                key={voiceId}
+                className={[
+                  'sequencer-row',
+                  isMuted
+                    ? 'sequencer-row--muted'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span className="sequencer-voice-name">
+                  {VOICE_LABELS[voiceId]}
+                </span>
 
                 <button
                   type="button"
-                  className={`sequencer-mute-button ${
-                    isMuted ? 'is-muted' : ''
-                  }`}
-                  aria-label={`${
-                    isMuted ? 'Unmute' : 'Mute'
-                  } ${
-                    VOICE_DETAILS[voice].label
-                  }`}
+                  className={[
+                    'sequencer-mute-button',
+                    isMuted
+                      ? 'sequencer-mute-button--active'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   aria-pressed={isMuted}
-                  title={`${
-                    isMuted ? 'Unmute' : 'Mute'
-                  } ${
-                    VOICE_DETAILS[voice].label
-                  }`}
+                  aria-label={`Mute ${VOICE_LABELS[voiceId]}`}
                   onClick={() =>
-                    onToggleMute(voice)
+                    onToggleMute(voiceId)
                   }
                 >
                   M
                 </button>
+
+                {visibleStepIndexes.map(
+                  (stepIndex) => {
+                    const state =
+                      pattern[voiceId][
+                        stepIndex
+                      ] ?? 'off';
+
+                    const isCurrentStep =
+                      isPlaying &&
+                      currentStep ===
+                        stepIndex;
+
+                    const isBeat =
+                      stepIndex % 4 === 0;
+
+                    return (
+                      <button
+                        key={stepIndex}
+                        type="button"
+                        className={[
+                          'sequencer-step',
+                          `sequencer-step--${state}`,
+                          isBeat
+                            ? 'sequencer-step--beat'
+                            : '',
+                          isCurrentStep
+                            ? 'sequencer-step--current'
+                            : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        aria-label={`${VOICE_LABELS[voiceId]}, step ${
+                          stepIndex + 1
+                        }, ${state}`}
+                        title={`Step ${
+                          stepIndex + 1
+                        }: ${state}`}
+                        onClick={() =>
+                          onCycleStep(
+                            voiceId,
+                            stepIndex,
+                          )
+                        }
+                      >
+                        {getStepSymbol(state)}
+                      </button>
+                    );
+                  },
+                )}
               </div>
-
-              {pattern[voice].map(
-                (isEnabled, step) => {
-                  const classNames = [
-                    'sequencer-step',
-                    isEnabled
-                      ? 'is-enabled'
-                      : '',
-                    isPlaying &&
-                    currentStep === step
-                      ? 'is-current'
-                      : '',
-                    step % 4 === 0
-                      ? 'is-beat-start'
-                      : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ');
-
-                  return (
-                    <button
-                      type="button"
-                      className={classNames}
-                      aria-label={`${
-                        VOICE_DETAILS[voice]
-                          .label
-                      }, step ${step + 1}`}
-                      aria-pressed={isEnabled}
-                      key={`${voice}-${step}`}
-                      onClick={() =>
-                        onToggleStep(
-                          voice,
-                          step,
-                        )
-                      }
-                    >
-                      <span />
-                    </button>
-                  );
-                },
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

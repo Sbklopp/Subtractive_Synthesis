@@ -1,12 +1,16 @@
 import {
   MAX_DRUM_BPM,
+  MAX_DRUM_SWING,
   MIN_DRUM_BPM,
+  MIN_DRUM_SWING,
 } from '../../domain/DrumMachine';
 
 interface TransportControlsProps {
   bpm: number;
+  swing: number;
   isPlaying: boolean;
   onBpmChange: (bpm: number) => void;
+  onSwingChange: (swing: number) => void;
   onPlay: () => void;
   onStop: () => void;
   onClear: () => void;
@@ -14,8 +18,10 @@ interface TransportControlsProps {
 
 export function TransportControls({
   bpm,
+  swing,
   isPlaying,
   onBpmChange,
+  onSwingChange,
   onPlay,
   onStop,
   onClear,
@@ -30,6 +36,23 @@ export function TransportControls({
 
     onBpmChange(normalizedBpm);
   };
+
+  const handleSwingChange = (
+    percentage: number,
+  ) => {
+    const normalizedSwing = Math.min(
+      Math.max(
+        percentage / 100,
+        MIN_DRUM_SWING,
+      ),
+      MAX_DRUM_SWING,
+    );
+
+    onSwingChange(normalizedSwing);
+  };
+
+  const swingPercentage =
+    Math.round(swing * 100);
 
   return (
     <div className="transport-controls">
@@ -94,6 +117,30 @@ export function TransportControls({
         />
 
         <span>BPM</span>
+      </div>
+
+      <div className="swing-control">
+        <label htmlFor="drum-swing">
+          Swing
+        </label>
+
+        <input
+          id="drum-swing"
+          type="range"
+          min={MIN_DRUM_SWING * 100}
+          max={MAX_DRUM_SWING * 100}
+          step="1"
+          value={swingPercentage}
+          onChange={(event) =>
+            handleSwingChange(
+              Number(event.target.value),
+            )
+          }
+        />
+
+        <output htmlFor="drum-swing">
+          {swingPercentage}%
+        </output>
       </div>
     </div>
   );

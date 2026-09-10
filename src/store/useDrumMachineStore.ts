@@ -5,12 +5,16 @@ import {
   DEFAULT_CLOSED_HI_HAT_SETTINGS,
   DEFAULT_CYMBAL_SETTINGS,
   DEFAULT_DRUM_BPM,
+  DEFAULT_DRUM_SWING,
   DEFAULT_OPEN_HI_HAT_SETTINGS,
   DEFAULT_SNARE_SETTINGS,
   MAX_DRUM_BPM,
+  MAX_DRUM_SWING,
   MIN_DRUM_BPM,
+  MIN_DRUM_SWING,
   createEmptyDrumPattern,
   createUnmutedDrumVoices,
+  getNextDrumStepState,
   type BassDrumSettings,
   type ClapSettings,
   type CymbalSettings,
@@ -32,6 +36,7 @@ interface DrumMachineStore {
   pattern: DrumPattern;
   mutedVoices: DrumMuteState;
   bpm: number;
+  swing: number;
   isPlaying: boolean;
   currentStep: number;
 
@@ -59,7 +64,7 @@ interface DrumMachineStore {
     settings: Partial<CymbalSettings>,
   ) => void;
 
-  toggleStep: (
+  cycleStep: (
     voice: DrumVoiceId,
     step: number,
   ) => void;
@@ -71,6 +76,7 @@ interface DrumMachineStore {
   unmuteAllVoices: () => void;
   clearPattern: () => void;
   setBpm: (bpm: number) => void;
+  setSwing: (swing: number) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setCurrentStep: (step: number) => void;
 
@@ -112,6 +118,7 @@ export const useDrumMachineStore =
     pattern: createEmptyDrumPattern(),
     mutedVoices: createUnmutedDrumVoices(),
     bpm: DEFAULT_DRUM_BPM,
+    swing: DEFAULT_DRUM_SWING,
     isPlaying: false,
     currentStep: -1,
 
@@ -163,14 +170,16 @@ export const useDrumMachineStore =
         },
       })),
 
-    toggleStep: (voice, step) =>
+    cycleStep: (voice, step) =>
       set((state) => {
         const nextVoiceSteps = [
           ...state.pattern[voice],
         ];
 
         nextVoiceSteps[step] =
-          !nextVoiceSteps[step];
+          getNextDrumStepState(
+            nextVoiceSteps[step],
+          );
 
         return {
           pattern: {
@@ -205,6 +214,17 @@ export const useDrumMachineStore =
         bpm: Math.min(
           Math.max(bpm, MIN_DRUM_BPM),
           MAX_DRUM_BPM,
+        ),
+      }),
+
+    setSwing: (swing) =>
+      set({
+        swing: Math.min(
+          Math.max(
+            swing,
+            MIN_DRUM_SWING,
+          ),
+          MAX_DRUM_SWING,
         ),
       }),
 
