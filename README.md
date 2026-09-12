@@ -5,7 +5,7 @@ A browser-based music creation application built with React, TypeScript, Tone.js
 The application currently includes two primary views:
 
 - A virtual subtractive synthesizer
-- A programmable drum machine with six synthesized drum voices and a 16-step sequencer
+- A programmable drum machine with six synthesized drum voices and a variable 2-64 step sequencer
 
 ## Technology
 
