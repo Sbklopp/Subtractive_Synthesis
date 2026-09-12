@@ -3,9 +3,14 @@ import {
   useMemo,
   useState,
 } from 'react';
+import type {
+  CSSProperties,
+} from 'react';
+import { audioController } from '../../audio/AudioController';
 import {
   DRUM_VOICE_IDS,
-  SEQUENCER_PAGE_COUNT,
+  MAX_SEQUENCE_LENGTH,
+  MIN_SEQUENCE_LENGTH,
   SEQUENCER_PAGE_SIZE,
 } from '../../domain/DrumMachine';
 import type {
@@ -65,27 +70,85 @@ export function SequencerGrid({
   onCycleStep,
   onToggleMute,
 }: SequencerGridProps) {
+  const [sequenceLength, setSequenceLength] =
+    useState(() =>
+      audioController.getDrumSequenceLength(),
+    );
+
   const [selectedPage, setSelectedPage] =
     useState(0);
+
+  const sequenceLengthOptions = useMemo(
+    () =>
+      Array.from(
+        { length: MAX_SEQUENCE_LENGTH },
+        (_, index) => index + 1,
+      ),
+    [],
+  );
+
+  const pageCount = Math.ceil(
+    sequenceLength / SEQUENCER_PAGE_SIZE,
+  );
 
   const pageIndexes = useMemo(
     () =>
       Array.from(
-        { length: SEQUENCER_PAGE_COUNT },
+        { length: pageCount },
         (_, index) => index,
       ),
-    [],
+    [pageCount],
   );
 
   const visibleStepIndexes = useMemo(() => {
     const firstStep =
       selectedPage * SEQUENCER_PAGE_SIZE;
 
+    const lastStep = Math.min(
+      firstStep + SEQUENCER_PAGE_SIZE,
+      sequenceLength,
+    );
+
     return Array.from(
-      { length: SEQUENCER_PAGE_SIZE },
+      {
+        length: Math.max(
+          0,
+          lastStep - firstStep,
+        ),
+      },
       (_, index) => firstStep + index,
     );
-  }, [selectedPage]);
+  }, [selectedPage, sequenceLength]);
+
+  const minimumGridWidth = Math.max(
+    260,
+    116 + visibleStepIndexes.length * 36,
+  );
+
+  const isFullPage =
+    visibleStepIndexes.length ===
+    SEQUENCER_PAGE_SIZE;
+
+  const gridStyle = {
+    '--visible-step-count':
+      visibleStepIndexes.length,
+
+    '--sequencer-grid-width': isFullPage
+      ? '100%'
+      : `${minimumGridWidth}px`,
+
+    '--sequencer-grid-min-width':
+      `${minimumGridWidth}px`,
+  } as CSSProperties;
+
+  useEffect(() => {
+    setSelectedPage((currentPage) =>
+      Math.min(
+        currentPage,
+        Math.max(0, pageCount - 1),
+      ),
+    );
+  }, [pageCount]);
 
   useEffect(() => {
     if (!isPlaying || currentStep < 0) {
@@ -98,15 +161,64 @@ export function SequencerGrid({
 
     if (
       activePage >= 0 &&
-      activePage < SEQUENCER_PAGE_COUNT
+      activePage < pageCount
     ) {
       setSelectedPage(activePage);
     }
-  }, [currentStep, isPlaying]);
+  }, [
+    currentStep,
+    isPlaying,
+    pageCount,
+  ]);
+
+  const handleSequenceLengthChange = (
+    length: number,
+  ) => {
+    const nextLength = Math.min(
+      MAX_SEQUENCE_LENGTH,
+      Math.max(
+        MIN_SEQUENCE_LENGTH,
+        Math.round(length),
+      ),
+    );
+
+    setSequenceLength(nextLength);
+
+    audioController.setDrumSequenceLength(
+      nextLength,
+    );
+  };
 
   return (
     <div className="sequencer-editor">
       <div className="sequencer-editor__toolbar">
+        <label className="sequence-length-control">
+          <span>Length</span>
+
+          <select
+            value={sequenceLength}
+            onChange={(event) =>
+              handleSequenceLengthChange(
+                Number(event.target.value),
+              )
+            }
+          >
+            {sequenceLengthOptions.map(
+              (length) => (
+                <option
+                  key={length}
+                  value={length}
+                >
+                  {length}{' '}
+                  {length === 1
+                    ? 'step'
+                    : 'steps'}
+                </option>
+              ),
+            )}
+          </select>
+        </label>
+
         <div
           className="sequencer-pages"
           role="group"
@@ -118,10 +230,12 @@ export function SequencerGrid({
                 SEQUENCER_PAGE_SIZE +
               1;
 
-            const lastStep =
+            const lastStep = Math.min(
               firstStep +
-              SEQUENCER_PAGE_SIZE -
-              1;
+                SEQUENCER_PAGE_SIZE -
+                1,
+              sequenceLength,
+            );
 
             const isSelected =
               selectedPage === pageIndex;
@@ -167,7 +281,10 @@ export function SequencerGrid({
       </div>
 
       <div className="sequencer-grid-scroll">
-        <div className="sequencer-grid">
+        <div
+          className="sequencer-grid"
+          style={gridStyle}
+        >
           <div className="sequencer-row sequencer-row--header">
             <span>Voice</span>
             <span>Mute</span>

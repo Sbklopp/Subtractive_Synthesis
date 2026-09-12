@@ -1,18 +1,19 @@
 import * as Tone from 'tone';
 import {
+  clampSequenceLength,
   cloneDrumMuteState,
   cloneDrumPattern,
   createEmptyDrumPattern,
   createUnmutedDrumVoices,
   DEFAULT_DRUM_BPM,
   DEFAULT_DRUM_SWING,
+  DEFAULT_SEQUENCE_LENGTH,
   DRUM_STEP_VELOCITIES,
   DRUM_VOICE_IDS,
   MAX_DRUM_BPM,
   MAX_DRUM_SWING,
   MIN_DRUM_BPM,
   MIN_DRUM_SWING,
-  SEQUENCER_STEP_COUNT,
 } from '../../domain/DrumMachine';
 import type {
   DrumMuteState,
@@ -35,6 +36,9 @@ export class DrumSequencer {
 
   private bpm = DEFAULT_DRUM_BPM;
   private swing = DEFAULT_DRUM_SWING;
+
+  private sequenceLength =
+    DEFAULT_SEQUENCE_LENGTH;
 
   private currentStep = 0;
   private scheduleId: number | null = null;
@@ -80,6 +84,17 @@ export class DrumSequencer {
     transport.swing = this.swing;
   }
 
+  setSequenceLength(length: number): void {
+    this.sequenceLength =
+      clampSequenceLength(length);
+
+    if (
+      this.currentStep >= this.sequenceLength
+    ) {
+      this.currentStep = 0;
+    }
+  }
+
   start(
     onStepChange: StepChangeHandler,
   ): void {
@@ -111,7 +126,7 @@ export class DrumSequencer {
 
           this.currentStep =
             (stepIndex + 1) %
-            SEQUENCER_STEP_COUNT;
+            this.sequenceLength;
         }, '16n');
     }
 

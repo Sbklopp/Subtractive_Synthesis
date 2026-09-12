@@ -3,19 +3,23 @@ import {
   DEFAULT_MASTER_SETTINGS,
 } from '../domain/Audio';
 import {
-  DEFAULT_DRUM_BPM,
-  DEFAULT_DRUM_SWING,
+  clampSequenceLength,
   cloneDrumMuteState,
   cloneDrumPattern,
   createEmptyDrumPattern,
   createUnmutedDrumVoices,
-  type BassDrumSettings,
-  type ClapSettings,
-  type CymbalSettings,
-  type DrumMuteState,
-  type DrumPattern,
-  type HiHatSettings,
-  type SnareSettings,
+  DEFAULT_DRUM_BPM,
+  DEFAULT_DRUM_SWING,
+  DEFAULT_SEQUENCE_LENGTH,
+} from '../domain/DrumMachine';
+import type {
+  BassDrumSettings,
+  ClapSettings,
+  CymbalSettings,
+  DrumMuteState,
+  DrumPattern,
+  HiHatSettings,
+  SnareSettings,
 } from '../domain/DrumMachine';
 import type {
   EnvelopeSettings,
@@ -32,12 +36,22 @@ import { MasterBus } from './MasterBus';
 import { SubtractiveSynth } from './synth/SubtractiveSynth';
 
 class AudioController {
-  private synth: SubtractiveSynth | null = null;
-  private drumMachine: DrumMachine | null = null;
-  private drumSequencer: DrumSequencer | null = null;
-  private masterBus: MasterBus | null = null;
-  private initializationPromise: Promise<void> | null =
+  private synth: SubtractiveSynth | null =
     null;
+
+  private drumMachine: DrumMachine | null =
+    null;
+
+  private drumSequencer:
+    | DrumSequencer
+    | null = null;
+
+  private masterBus: MasterBus | null =
+    null;
+
+  private initializationPromise:
+    | Promise<void>
+    | null = null;
 
   private noteRequestId = 0;
 
@@ -47,14 +61,17 @@ class AudioController {
   private masterMuted =
     DEFAULT_MASTER_SETTINGS.muted;
 
-  private drumPattern =
+  private drumPattern: DrumPattern =
     createEmptyDrumPattern();
 
-  private mutedDrumVoices =
+  private mutedDrumVoices: DrumMuteState =
     createUnmutedDrumVoices();
 
   private drumBpm = DEFAULT_DRUM_BPM;
   private drumSwing = DEFAULT_DRUM_SWING;
+
+  private drumSequenceLength =
+    DEFAULT_SEQUENCE_LENGTH;
 
   async initialize(): Promise<void> {
     if (
@@ -67,51 +84,61 @@ class AudioController {
     }
 
     if (!this.initializationPromise) {
-      this.initializationPromise = (async () => {
-        await Tone.start();
+      this.initializationPromise =
+        (async () => {
+          await Tone.start();
 
-        if (!this.masterBus) {
-          this.masterBus = new MasterBus({
-            volume: this.masterVolume,
-            muted: this.masterMuted,
-          });
-        }
+          if (!this.masterBus) {
+            this.masterBus = new MasterBus({
+              volume: this.masterVolume,
+              muted: this.masterMuted,
+            });
+          }
 
-        if (!this.synth) {
-          this.synth = new SubtractiveSynth(
-            this.masterBus.input,
-          );
-        }
+          if (!this.synth) {
+            this.synth =
+              new SubtractiveSynth(
+                this.masterBus.input,
+              );
+          }
 
-        if (!this.drumMachine) {
-          this.drumMachine = new DrumMachine(
-            this.masterBus.input,
-          );
-        }
+          if (!this.drumMachine) {
+            this.drumMachine =
+              new DrumMachine(
+                this.masterBus.input,
+              );
+          }
 
-        if (!this.drumSequencer) {
-          this.drumSequencer =
-            new DrumSequencer(
-              this.drumMachine,
+          if (
+            !this.drumSequencer &&
+            this.drumMachine
+          ) {
+            this.drumSequencer =
+              new DrumSequencer(
+                this.drumMachine,
+              );
+
+            this.drumSequencer.setPattern(
+              this.drumPattern,
             );
 
-          this.drumSequencer.setPattern(
-            this.drumPattern,
-          );
+            this.drumSequencer.setMutedVoices(
+              this.mutedDrumVoices,
+            );
 
-          this.drumSequencer.setMutedVoices(
-            this.mutedDrumVoices,
-          );
+            this.drumSequencer.setBpm(
+              this.drumBpm,
+            );
 
-          this.drumSequencer.setBpm(
-            this.drumBpm,
-          );
+            this.drumSequencer.setSwing(
+              this.drumSwing,
+            );
 
-          this.drumSequencer.setSwing(
-            this.drumSwing,
-          );
-        }
-      })();
+            this.drumSequencer.setSequenceLength(
+              this.drumSequenceLength,
+            );
+          }
+        })();
     }
 
     try {
@@ -143,7 +170,11 @@ class AudioController {
     type: OscillatorType,
   ): Promise<void> {
     await this.initialize();
-    this.synth?.setOscillatorType(oscillatorId, type);
+
+    this.synth?.setOscillatorType(
+      oscillatorId,
+      type,
+    );
   }
 
   async setOscillatorLevel(
@@ -151,7 +182,11 @@ class AudioController {
     level: number,
   ): Promise<void> {
     await this.initialize();
-    this.synth?.setOscillatorLevel(oscillatorId, level);
+
+    this.synth?.setOscillatorLevel(
+      oscillatorId,
+      level,
+    );
   }
 
   async setOscillatorDetune(
@@ -159,7 +194,11 @@ class AudioController {
     detune: number,
   ): Promise<void> {
     await this.initialize();
-    this.synth?.setOscillatorDetune(oscillatorId, detune);
+
+    this.synth?.setOscillatorDetune(
+      oscillatorId,
+      detune,
+    );
   }
 
   async setOscillatorOctave(
@@ -167,13 +206,18 @@ class AudioController {
     octave: OscillatorOctave,
   ): Promise<void> {
     await this.initialize();
-    this.synth?.setOscillatorOctave(oscillatorId, octave);
+
+    this.synth?.setOscillatorOctave(
+      oscillatorId,
+      octave,
+    );
   }
 
   async setFilterCutoff(
     frequency: number,
   ): Promise<void> {
     await this.initialize();
+
     this.synth?.setFilterCutoff(frequency);
   }
 
@@ -181,6 +225,7 @@ class AudioController {
     resonance: number,
   ): Promise<void> {
     await this.initialize();
+
     this.synth?.setFilterResonance(resonance);
   }
 
@@ -188,6 +233,7 @@ class AudioController {
     envelope: FilterEnvelopeSettings,
   ): Promise<void> {
     await this.initialize();
+
     this.synth?.setFilterEnvelope(envelope);
   }
 
@@ -195,6 +241,7 @@ class AudioController {
     envelope: EnvelopeSettings,
   ): Promise<void> {
     await this.initialize();
+
     this.synth?.setEnvelope(envelope);
   }
 
@@ -202,6 +249,7 @@ class AudioController {
     settings: LfoSettings,
   ): Promise<void> {
     await this.initialize();
+
     this.synth?.setLfoSettings(settings);
   }
 
@@ -209,13 +257,17 @@ class AudioController {
     velocity = 1,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.triggerBassDrum(velocity);
+
+    this.drumMachine?.triggerBassDrum(
+      velocity,
+    );
   }
 
   async triggerSnare(
     velocity = 1,
   ): Promise<void> {
     await this.initialize();
+
     this.drumMachine?.triggerSnare(velocity);
   }
 
@@ -223,6 +275,7 @@ class AudioController {
     velocity = 1,
   ): Promise<void> {
     await this.initialize();
+
     this.drumMachine?.triggerClap(velocity);
   }
 
@@ -230,20 +283,27 @@ class AudioController {
     velocity = 1,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.triggerClosedHiHat(velocity);
+
+    this.drumMachine?.triggerClosedHiHat(
+      velocity,
+    );
   }
 
   async triggerOpenHiHat(
     velocity = 1,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.triggerOpenHiHat(velocity);
+
+    this.drumMachine?.triggerOpenHiHat(
+      velocity,
+    );
   }
 
   async triggerCymbal(
     velocity = 1,
   ): Promise<void> {
     await this.initialize();
+
     this.drumMachine?.triggerCymbal(velocity);
   }
 
@@ -251,21 +311,30 @@ class AudioController {
     settings: BassDrumSettings,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.setBassDrumSettings(settings);
+
+    this.drumMachine?.setBassDrumSettings(
+      settings,
+    );
   }
 
   async setSnareSettings(
     settings: SnareSettings,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.setSnareSettings(settings);
+
+    this.drumMachine?.setSnareSettings(
+      settings,
+    );
   }
 
   async setClapSettings(
     settings: ClapSettings,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.setClapSettings(settings);
+
+    this.drumMachine?.setClapSettings(
+      settings,
+    );
   }
 
   async setClosedHiHatSettings(
@@ -292,59 +361,79 @@ class AudioController {
     settings: CymbalSettings,
   ): Promise<void> {
     await this.initialize();
-    this.drumMachine?.setCymbalSettings(settings);
+
+    this.drumMachine?.setCymbalSettings(
+      settings,
+    );
   }
 
-  setDrumPattern(pattern: DrumPattern): void {
+  async setDrumPattern(
+    pattern: DrumPattern,
+  ): Promise<void> {
     this.drumPattern =
       cloneDrumPattern(pattern);
 
-    this.drumSequencer?.setPattern(
-      this.drumPattern,
-    );
-  }
-
-  setMutedDrumVoices(
-    mutedVoices: DrumMuteState,
-  ): void {
-    this.mutedDrumVoices =
-      cloneDrumMuteState(mutedVoices);
-
-    this.drumSequencer?.setMutedVoices(
-      this.mutedDrumVoices,
-    );
-  }
-
-  setDrumBpm(bpm: number): void {
-    this.drumBpm = bpm;
-    this.drumSequencer?.setBpm(bpm);
-  }
-
-  setDrumSwing(swing: number): void {
-    this.drumSwing = swing;
-    this.drumSequencer?.setSwing(swing);
-  }
-
-  async startDrumSequencer(
-    onStepChange: (step: number) => void,
-  ): Promise<void> {
     await this.initialize();
 
     this.drumSequencer?.setPattern(
       this.drumPattern,
     );
+  }
+
+  async setMutedDrumVoices(
+    mutedVoices: DrumMuteState,
+  ): Promise<void> {
+    this.mutedDrumVoices =
+      cloneDrumMuteState(mutedVoices);
+
+    await this.initialize();
 
     this.drumSequencer?.setMutedVoices(
       this.mutedDrumVoices,
     );
+  }
 
-    this.drumSequencer?.setBpm(
-      this.drumBpm,
-    );
+  async setDrumBpm(
+    bpm: number,
+  ): Promise<void> {
+    this.drumBpm = bpm;
 
-    this.drumSequencer?.setSwing(
-      this.drumSwing,
+    await this.initialize();
+
+    this.drumSequencer?.setBpm(bpm);
+  }
+
+  async setDrumSwing(
+    swing: number,
+  ): Promise<void> {
+    this.drumSwing = swing;
+
+    await this.initialize();
+
+    this.drumSequencer?.setSwing(swing);
+  }
+
+  setDrumSequenceLength(
+    length: number,
+  ): void {
+    this.drumSequenceLength =
+      clampSequenceLength(length);
+
+    this.drumSequencer?.setSequenceLength(
+      this.drumSequenceLength,
     );
+  }
+
+  getDrumSequenceLength(): number {
+    return this.drumSequenceLength;
+  }
+
+  async startDrumSequencer(
+    onStepChange: (
+      stepIndex: number,
+    ) => void,
+  ): Promise<void> {
+    await this.initialize();
 
     this.drumSequencer?.start(
       onStepChange,
@@ -359,7 +448,9 @@ class AudioController {
     volume: number,
   ): Promise<void> {
     this.masterVolume = volume;
+
     await this.initialize();
+
     this.masterBus?.setVolume(volume);
   }
 
@@ -367,7 +458,9 @@ class AudioController {
     muted: boolean,
   ): Promise<void> {
     this.masterMuted = muted;
+
     await this.initialize();
+
     this.masterBus?.setMuted(muted);
   }
 
@@ -441,9 +534,12 @@ class AudioController {
     synth.setLfoSettings(patch.lfo);
   }
 
-  getWaveformData(): Float32Array | null {
+  getWaveformData():
+    | Float32Array
+    | null {
     return (
-      this.masterBus?.getWaveformData() ?? null
+      this.masterBus?.getWaveformData() ??
+      null
     );
   }
 

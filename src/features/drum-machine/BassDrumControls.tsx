@@ -1,4 +1,8 @@
+import {
+  BASS_DRUM_OSCILLATOR_TYPES,
+} from '../../domain/DrumMachine';
 import type {
+  BassDrumOscillatorType,
   BassDrumSettings,
 } from '../../domain/DrumMachine';
 
@@ -10,116 +14,164 @@ interface BassDrumControlsProps {
   ) => void;
 }
 
-export const BassDrumControls = ({
+export function BassDrumControls({
   settings,
   onChange,
-}: BassDrumControlsProps) => {
+}: BassDrumControlsProps) {
   return (
-    <fieldset className="bass-drum-controls">
-      <legend>Bass Drum</legend>
+    <fieldset className="drum-voice-controls">
+      <legend>Bass drum controls</legend>
 
-      <div>
-        <label htmlFor="bass-drum-tune">
-          Tune: {settings.tune} Hz
-        </label>
+      <label htmlFor="bass-oscillator">
+        <span>Wave</span>
+      </label>
 
-        <input
-          id="bass-drum-tune"
-          type="range"
-          min="35"
-          max="80"
-          step="1"
-          value={settings.tune}
-          onChange={(event) =>
-            onChange({
-              tune: Number(event.target.value),
-            })
-          }
-        />
-      </div>
+      <select
+        id="bass-oscillator"
+        className="drum-voice-select"
+        value={
+          settings.oscillatorType ??
+          'triangle'
+        }
+        onChange={(event) =>
+          onChange({
+            oscillatorType:
+              event.target
+                .value as BassDrumOscillatorType,
+          })
+        }
+      >
+        {BASS_DRUM_OSCILLATOR_TYPES.map(
+          (oscillatorType) => (
+            <option
+              key={oscillatorType}
+              value={oscillatorType}
+            >
+              {oscillatorType === 'sine'
+                ? 'Sine'
+                : 'Triangle'}
+            </option>
+          ),
+        )}
+      </select>
 
-      <div>
-        <label htmlFor="bass-drum-pitch-drop">
-          Pitch drop: {settings.pitchDrop.toFixed(1)}
-          {' octaves'}
-        </label>
+      <label htmlFor="bass-tune">
+        <span>Tune</span>
 
-        <input
-          id="bass-drum-pitch-drop"
-          type="range"
-          min="0.5"
-          max="8"
-          step="0.1"
-          value={settings.pitchDrop}
-          onChange={(event) =>
-            onChange({
-              pitchDrop: Number(
-                event.target.value,
-              ),
-            })
-          }
-        />
-      </div>
+        <output>
+          {Math.round(settings.tune)} Hz
+        </output>
+      </label>
 
-      <div>
-        <label htmlFor="bass-drum-decay">
-          Decay: {settings.decay.toFixed(2)} s
-        </label>
+      <input
+        id="bass-tune"
+        type="range"
+        min="30"
+        max="120"
+        step="1"
+        value={settings.tune}
+        onChange={(event) =>
+          onChange({
+            tune: Number(event.target.value),
+          })
+        }
+      />
 
-        <input
-          id="bass-drum-decay"
-          type="range"
-          min="0.1"
-          max="2"
-          step="0.01"
-          value={settings.decay}
-          onChange={(event) =>
-            onChange({
-              decay: Number(event.target.value),
-            })
-          }
-        />
-      </div>
+      <label htmlFor="bass-pitch-drop">
+        <span>Pitch Drop</span>
 
-      <div>
-        <label htmlFor="bass-drum-tone">
-          Tone: {settings.tone} Hz
-        </label>
+        <output>
+          {settings.pitchDrop.toFixed(1)}
+        </output>
+      </label>
 
-        <input
-          id="bass-drum-tone"
-          type="range"
-          min="100"
-          max="8000"
-          step="10"
-          value={settings.tone}
-          onChange={(event) =>
-            onChange({
-              tone: Number(event.target.value),
-            })
-          }
-        />
-      </div>
+      <input
+        id="bass-pitch-drop"
+        type="range"
+        min="0.5"
+        max="8"
+        step="0.1"
+        value={settings.pitchDrop}
+        onChange={(event) =>
+          onChange({
+            pitchDrop: Number(
+              event.target.value,
+            ),
+          })
+        }
+      />
 
-      <div>
-        <label htmlFor="bass-drum-level">
-          Level: {Math.round(settings.level * 100)}%
-        </label>
+      <label htmlFor="bass-decay">
+        <span>Decay</span>
 
-        <input
-          id="bass-drum-level"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={settings.level}
-          onChange={(event) =>
-            onChange({
-              level: Number(event.target.value),
-            })
-          }
-        />
-      </div>
+        <output>
+          {settings.decay.toFixed(2)} s
+        </output>
+      </label>
+
+      <input
+        id="bass-decay"
+        type="range"
+        min="0.05"
+        max="4"
+        step="0.01"
+        value={settings.decay}
+        onChange={(event) =>
+          onChange({
+            decay: Number(
+              event.target.value,
+            ),
+          })
+        }
+      />
+
+      <label htmlFor="bass-tone">
+        <span>Tone</span>
+
+        <output>
+          {Math.round(settings.tone)} Hz
+        </output>
+      </label>
+
+      <input
+        id="bass-tone"
+        type="range"
+        min="100"
+        max="8000"
+        step="10"
+        value={settings.tone}
+        onChange={(event) =>
+          onChange({
+            tone: Number(
+              event.target.value,
+            ),
+          })
+        }
+      />
+
+      <label htmlFor="bass-level">
+        <span>Level</span>
+
+        <output>
+          {Math.round(settings.level * 100)}%
+        </output>
+      </label>
+
+      <input
+        id="bass-level"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={settings.level}
+        onChange={(event) =>
+          onChange({
+            level: Number(
+              event.target.value,
+            ),
+          })
+        }
+      />
     </fieldset>
   );
-};
+}

@@ -1,6 +1,15 @@
+export const BASS_DRUM_OSCILLATOR_TYPES = [
+  'sine',
+  'triangle',
+] as const;
+
+export type BassDrumOscillatorType =
+  (typeof BASS_DRUM_OSCILLATOR_TYPES)[number];
+
 export interface BassDrumSettings {
   tune: number;
   pitchDrop: number;
+  oscillatorType: BassDrumOscillatorType;
   decay: number;
   tone: number;
   level: number;
@@ -39,6 +48,7 @@ export const DEFAULT_BASS_DRUM_SETTINGS:
   BassDrumSettings = {
     tune: 50,
     pitchDrop: 4,
+    oscillatorType: 'triangle',
     decay: 0.6,
     tone: 1200,
     level: 0.75,
@@ -113,10 +123,14 @@ export type DrumMuteState = Record<
 >;
 
 export const SEQUENCER_STEP_COUNT = 64;
-export const SEQUENCER_PAGE_SIZE = 16;
+export const SEQUENCER_PAGE_SIZE = 32;
 
-export const SEQUENCER_PAGE_COUNT =
-  SEQUENCER_STEP_COUNT / SEQUENCER_PAGE_SIZE;
+export const MIN_SEQUENCE_LENGTH = 1;
+export const MAX_SEQUENCE_LENGTH =
+  SEQUENCER_STEP_COUNT;
+
+export const DEFAULT_SEQUENCE_LENGTH =
+  SEQUENCER_STEP_COUNT;
 
 export const DEFAULT_DRUM_BPM = 120;
 export const MIN_DRUM_BPM = 40;
@@ -134,6 +148,18 @@ export const DRUM_STEP_VELOCITIES: Record<
   normal: 0.7,
   accent: 1,
 };
+
+export function clampSequenceLength(
+  length: number,
+): number {
+  return Math.min(
+    MAX_SEQUENCE_LENGTH,
+    Math.max(
+      MIN_SEQUENCE_LENGTH,
+      Math.round(length),
+    ),
+  );
+}
 
 function createEmptySteps(): DrumStepState[] {
   return Array.from(

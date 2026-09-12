@@ -488,9 +488,7 @@ export function DrumMachinePanel() {
             Rhythm section
           </p>
 
-          <h2 id="drum-machine-title">
-            Drum Machine
-          </h2>
+          <h2>Drum Sequencer</h2>
         </div>
 
         <div className="drum-keyboard-help">

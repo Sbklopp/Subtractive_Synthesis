@@ -256,3 +256,25 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.drum-voice-select {
+  width: 100%;
+  min-height: 1.75rem;
+  margin-bottom: 0.2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #7b898f;
+  border-radius: 0.3rem;
+  background: #343d42;
+  color: #f1f5f7;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.drum-voice-select:focus {
+  border-color: #ff7043;
+  outline: 2px solid
+    rgb(255 112 67 / 25%);
+  outline-offset: 1px;
+}

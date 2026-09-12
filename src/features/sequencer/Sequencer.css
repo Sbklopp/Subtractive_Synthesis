@@ -43,7 +43,10 @@
 .tempo-control,
 .swing-control {
   display: grid;
-  grid-template-columns: auto minmax(90px, 1fr) auto;
+  grid-template-columns:
+    auto
+    minmax(90px, 1fr)
+    auto;
   align-items: center;
   gap: 0.4rem;
   min-width: 190px;
@@ -83,9 +86,29 @@
 .sequencer-editor__toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
+}
+
+.sequence-length-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.sequence-length-control select {
+  min-height: 1.8rem;
+  padding: 0.2rem 1.7rem 0.2rem 0.45rem;
+  border: 1px solid #657984;
+  border-radius: 0.3rem;
+  background: #eef3f5;
+  color: #263036;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .sequencer-pages {
@@ -121,6 +144,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  margin-left: auto;
   font-size: 0.68rem;
   font-weight: 700;
 }
@@ -142,7 +166,10 @@
 .sequencer-grid {
   display: grid;
   gap: 0.25rem;
-  min-width: 720px;
+  width: var(--sequencer-grid-width);
+  min-width: var(
+    --sequencer-grid-min-width
+  );
 }
 
 .sequencer-row {
@@ -150,7 +177,10 @@
   grid-template-columns:
     70px
     38px
-    repeat(16, minmax(24px, 1fr));
+    repeat(
+      var(--visible-step-count),
+      minmax(24px, 1fr)
+    );
   align-items: center;
   gap: 0.2rem;
 }
@@ -280,6 +310,10 @@
 
   .sequencer-editor__toolbar {
     align-items: flex-start;
-    flex-direction: column;
+  }
+
+  .sequencer-legend {
+    width: 100%;
+    margin-left: 0;
   }
 }

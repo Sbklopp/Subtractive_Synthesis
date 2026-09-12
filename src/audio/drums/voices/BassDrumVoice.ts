@@ -4,46 +4,88 @@ import type {
 } from '../../../domain/DrumMachine';
 
 export class BassDrumVoice {
-  private readonly synth: Tone.MembraneSynth;
-  private readonly toneFilter: Tone.Filter;
-  private readonly outputGain: Tone.Gain;
+  private readonly synth:
+    Tone.MembraneSynth;
+
+  private readonly filter: Tone.Filter;
+  private readonly output: Tone.Gain;
 
   private settings: BassDrumSettings;
 
   constructor(
     settings: BassDrumSettings,
-    output: Tone.Gain,
+    destination: Tone.InputNode,
   ) {
-    this.settings = { ...settings };
+    this.settings = {
+      ...settings,
+      oscillatorType:
+        settings.oscillatorType ??
+        'triangle',
+    };
+
+    this.output = new Tone.Gain(
+      this.settings.level,
+    ).connect(destination);
+
+    this.filter = new Tone.Filter({
+      type: 'lowpass',
+      frequency: this.settings.tone,
+      rolloff: -24,
+      Q: 1,
+    }).connect(this.output);
 
     this.synth = new Tone.MembraneSynth({
       pitchDecay: 0.05,
-      octaves: settings.pitchDrop,
+      octaves: this.settings.pitchDrop,
+
       oscillator: {
-        type: 'sine',
+        type: this.settings.oscillatorType,
       },
+
       envelope: {
         attack: 0.001,
-        decay: settings.decay,
+        decay: this.settings.decay,
+        sustain: 0,
+        release: 0.05,
+      },
+    }).connect(this.filter);
+  }
+
+  setSettings(
+    settings: BassDrumSettings,
+  ): void {
+    this.settings = {
+      ...settings,
+      oscillatorType:
+        settings.oscillatorType ??
+        'triangle',
+    };
+
+    this.synth.set({
+      pitchDecay: 0.05,
+      octaves: this.settings.pitchDrop,
+
+      oscillator: {
+        type: this.settings.oscillatorType,
+      },
+
+      envelope: {
+        attack: 0.001,
+        decay: this.settings.decay,
         sustain: 0,
         release: 0.05,
       },
     });
 
-    this.toneFilter = new Tone.Filter({
-      type: 'lowpass',
-      frequency: settings.tone,
-      Q: 0.7,
-      rolloff: -24,
-    });
-
-    this.outputGain = new Tone.Gain(
-      settings.level,
+    this.filter.frequency.rampTo(
+      this.settings.tone,
+      0.02,
     );
 
-    this.synth.connect(this.toneFilter);
-    this.toneFilter.connect(this.outputGain);
-    this.outputGain.connect(output);
+    this.output.gain.rampTo(
+      this.settings.level,
+      0.02,
+    );
   }
 
   trigger(
@@ -58,31 +100,9 @@ export class BassDrumVoice {
     );
   }
 
-  setSettings(
-    settings: BassDrumSettings,
-  ): void {
-    this.settings = { ...settings };
-
-    this.synth.octaves =
-      settings.pitchDrop;
-
-    this.synth.envelope.decay =
-      settings.decay;
-
-    this.toneFilter.frequency.rampTo(
-      settings.tone,
-      0.02,
-    );
-
-    this.outputGain.gain.rampTo(
-      settings.level,
-      0.02,
-    );
-  }
-
   dispose(): void {
     this.synth.dispose();
-    this.toneFilter.dispose();
-    this.outputGain.dispose();
+    this.filter.dispose();
+    this.output.dispose();
   }
 }
